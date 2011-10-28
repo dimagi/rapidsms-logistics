@@ -62,8 +62,6 @@ def landing_page(request):
     return dashboard(request)
 
 def input_stock(request, facility_code, context={}, template="logistics/input_stock.html"):
-    # TODO: replace this with something that depends on the current user
-    # QUESTION: is it possible to make a dynamic form?
     errors = ''
     rms = get_object_or_404(SupplyPoint, code=facility_code)
     productstocks = [p for p in ProductStock.objects.filter(supply_point=rms).order_by('product__name')]

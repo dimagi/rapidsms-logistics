@@ -1,5 +1,27 @@
 
 {% if request.datespan %}&nbsp;
+
+<script type="text/javascript" src="{{ MEDIA_URL }}logistics/javascripts/date.format.js"></script>
+<script type="text/javascript">
+    <!--//--><![CDATA[//><!--
+    $(document).ready(function(){
+        $("#selector").submit(function(event) {
+            function to_utc_date(date_string, format)
+            {
+                var my_date = new Date(date_string);
+                return my_date.format(format)
+            }
+            var format = $("#selector > #format").val()
+            var from_date = $("#selector > #from").val();
+            $("#selector > #from").val(to_utc_date(from_date, format));
+            var to_date = $("#selector > #to").val();
+            $("#selector > #to").val(to_utc_date(to_date, format));
+        });
+    });
+    //--><!]]>
+</script>
+
+
 <span class="noprint">
 	<form method="get" id="selector">
 	Change Report Dates: {% include "logistics/partials/date_selector.html" %}
