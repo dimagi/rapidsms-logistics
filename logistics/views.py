@@ -271,6 +271,9 @@ def _get_rows_from_children(children, commodity_filter, commoditytype_filter, da
         row['overstocked_count'] = child.overstocked_count(product=commodity_filter, 
                                                      producttype=commoditytype_filter, 
                                                      datespan=datespan)
+        row['other_count'] = child.other_count(product=commodity_filter, 
+                                               producttype=commoditytype_filter, 
+                                               datespan=datespan)
         if commodity_filter is not None:
             row['consumption'] = child.consumption(product=commodity_filter, 
                                                    producttype=commoditytype_filter)
