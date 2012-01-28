@@ -57,6 +57,9 @@ class Product(models.Model):
     emergency_order_level = PositiveIntegerField(null=True, blank=True)
     type = models.ForeignKey('ProductType', db_index=True)
     equivalents = models.ManyToManyField('self', null=True, blank=True)
+    # this attribute is only used when LOGISTICS_STOCKED_BY = StockedBy.PRODUCT
+    # it indicates that this product needs to be reported by facilities (as opposed to
+    # products which we recognize but aren't required for reporting)
     is_active = models.BooleanField(default=True, db_index=True)
     
     def __unicode__(self):
