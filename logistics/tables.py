@@ -30,7 +30,14 @@ def _edit_facility_link(cell):
         'facility_edit',
         args=[cell.row.pk])
 def _location(cell):
-    return cell.object.display_location()
+    """ 
+    Technically, the location of Ada Health Clinic is Ada Health Clinic
+    In this particular table, we want to provide context, if available, on the parent location
+    i.e. that Ada Health Center is in Dangme East District
+    """
+    if cell.object.location.tree_parent:
+        return cell.object.location.tree_parent
+    return cell.object.location
 class FacilityTable(Table):
     name = Column(link=_edit_facility_link)
     location = Column(value=_location)
