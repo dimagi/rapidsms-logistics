@@ -81,14 +81,14 @@ class App(AppBase):
             response = response + 'still missing %(missing_stock)s. '
         if stockouts:
             response = response + 'these items are stocked out: %(stockouts)s. '
-            super_response = "stockouts %(stockouts)s; "
+            super_response = "stockouts %(stockouts_by_name)s; "
         if low_supply:
             response = response + 'these items need to be reordered: %(low_supply)s. '
-            super_response = super_response + "below reorder level %(low_supply)s; "
+            super_response = super_response + "below reorder level %(low_supply_by_name)s; "
         if (stockouts or low_supply) and amount_to_reorder:
             response = response + 'Please order %(amount_to_reorder)s. '
         if over_supply:
-            super_response = super_response + "overstocked %(overstocked)s; "
+            super_response = super_response + "overstocked %(overstocked_by_name)s; "
             if not response:
                 response = 'these items are overstocked: %(overstocked)s. The district admin has been informed.'
         if not response:
@@ -100,12 +100,15 @@ class App(AppBase):
         if super_response:
             super_response = 'Dear %(admin_name)s, %(supply_point)s is experiencing the following problems: ' + super_response.strip().strip(';')
         kwargs = {  'low_supply': low_supply,
+                    'low_supply_by_name': stock_report.low_supply_by_name(),
                     'stockouts': stockouts,
+                    'stockouts_by_name': stock_report.stockouts_by_name(),
                     'amount_to_reorder': amount_to_reorder,
                     'missing_stock': ', '.join(missing_product_list),
                     'stocks': stock_report.all(),
                     'received': received,
                     'overstocked': over_supply,
+                    'overstocked_by_name': stock_report.over_supply_by_name(),
                     'name': stock_report.message.contact.name,
                     'supply_point': stock_report.supply_point.name }
         return (response, super_response, kwargs)

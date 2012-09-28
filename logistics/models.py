@@ -1554,10 +1554,6 @@ class ProductReportsHelper(object):
                                 dupes.append(key)
         return [key for key, val in stockouts.items() if val == 0 and key not in dupes]
 
-    def stockouts(self):
-        stockouts = self._stockouts()
-        return " ".join(stockouts)
-        
     def _low_supply(self):
         low_supply = {}
         for i in self.product_stock:
@@ -1580,18 +1576,14 @@ class ProductReportsHelper(object):
                         dupes.append(ls)
         return [key for key, val in low_supply.items() if key not in dupes]
 
-    def low_supply(self):
-        low_supply = self._low_supply()
-        return " ".join(low_supply)
-    
     def amount_to_reorder(self):
         reorder = self._stockouts() + self._low_supply()
         pss = ProductStock.objects.filter(supply_point=self.supply_point, 
                                           product__sms_code__in=reorder)
         return ", ".join('%s %s' % (ps.reorder_amount, ps.product.sms_code) for ps in pss if ps.reorder_level is not None)
 
-    def over_supply(self):
-        over_supply = ""
+    def _over_supply(self):
+        over_supply = []
         for i in self.product_stock:
             productstock = ProductStock.objects.filter(supply_point=self.supply_point)\
                 .get(product__sms_code__icontains=i)
@@ -1602,10 +1594,34 @@ class ProductReportsHelper(object):
             if productstock.monthly_consumption is not None:
                 if self.product_stock[i] >= productstock.maximum_level and \
                    productstock.monthly_consumption > 0:
-                    over_supply = "%s %s" % (over_supply, i)
-        over_supply = over_supply.strip()
+                    over_supply.append(i)
         return over_supply
 
+    def _list_by_code(self, list_of_codes):
+        return " ".join(list_of_codes)
+        
+    def _list_by_name(self, list_of_codes):
+        products_by_name = [self.get_product(code).name for code in list_of_codes]
+        return " ".join(products_by_name)
+        
+    def stockouts(self):
+        return self._list_by_code(self._stockouts())        
+    
+    def stockouts_by_name(self):
+        return self._list_by_name(self._stockouts())        
+
+    def low_supply(self):
+        return self._list_by_code(self._low_supply())        
+    
+    def low_supply_by_name(self):
+        return self._list_by_name(self._low_supply())
+        
+    def over_supply(self):
+        return self._list_by_code(self._over_supply())        
+    
+    def over_supply_by_name(self):
+        return self._list_by_name(self._over_supply())
+    
     def missing_products(self):
         """
         check for active products that haven't yet been added
