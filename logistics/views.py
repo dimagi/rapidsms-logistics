@@ -464,8 +464,6 @@ def message_log(request, context={}, template="messagelog/index.html"):
     To get the complete message log, web users should export to excel 
     """
     messages = Message.objects.all()
-    if 'messages_qs' in context:
-        messages = context['messages_qs']
     if request.datespan is not None and request.datespan:
         messages = messages.filter(date__gte=request.datespan.startdate)\
           .filter(date__lte=request.datespan.end_of_end_day)
