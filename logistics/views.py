@@ -463,11 +463,11 @@ def message_log(request, context={}, template="messagelog/index.html"):
     NOTE: this truncates the messagelog by default to the last 30 days. 
     To get the complete message log, web users should export to excel 
     """
-    messages = Message.objects.all()
     if request.datespan is not None and request.datespan:
+        messages = Message.objects.all()
         messages = messages.filter(date__gte=request.datespan.startdate)\
           .filter(date__lte=request.datespan.end_of_end_day)
-    context['messages_qs'] = messages
+        context['messages_qs'] = messages
     return rapidsms_messagelog(request, context=context, 
                                template=template)
 
