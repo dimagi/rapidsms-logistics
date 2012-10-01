@@ -104,7 +104,7 @@ class SOHReportingTable(MonthTable):
                                css_class="tabledate")
 
     class Meta:
-        order_by = '-last_reported'
+        order_by = 'last_reported'
 
 def _parent_or_nothing(location):
     if location is None or \
