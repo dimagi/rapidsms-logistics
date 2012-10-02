@@ -30,6 +30,9 @@
      {% if deleted %}
           <br/><div class="success">{{deleted}} has been successfully deleted.</div>
      {% endif %}
+     {% if updated %}
+          <br/><div class="success">{{deleted}} has been successfully updated.</div>
+     {% endif %}
 
 	<form action="" method="post">
 		{% render_form form %}
