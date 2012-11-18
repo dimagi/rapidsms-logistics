@@ -1487,7 +1487,7 @@ class ProductReportsHelper(object):
         if the product can't be found.
         """
         try:
-            return Product.objects.get(sms_code__icontains=product_code)
+            return Product.objects.get(sms_code__iexact=product_code)
         except (Product.DoesNotExist, Product.MultipleObjectsReturned):
             raise UnknownCommodityCodeError(product_code)
     
@@ -1566,7 +1566,7 @@ class ProductReportsHelper(object):
         low_supply = {}
         for i in self.product_stock:
             productstock = ProductStock.objects.filter(supply_point=self.supply_point)\
-                .get(product__sms_code__icontains=i)#.select_related('product','product__equivalent_to')
+                .get(product__sms_code__iexact=i)#.select_related('product','product__equivalent_to')
             if productstock.is_below_low_supply():
                 low_supply[i] = productstock
         # strip equivalents
@@ -1594,7 +1594,7 @@ class ProductReportsHelper(object):
         over_supply = []
         for i in self.product_stock:
             productstock = ProductStock.objects.filter(supply_point=self.supply_point)\
-                .get(product__sms_code__icontains=i)
+                .get(product__sms_code__iexact=i)
             #if productstock.monthly_consumption == 0:
             #    raise ValueError("I'm sorry. I cannot calculate oversupply
             #    for %(code)s until I know your monthly con/sumption.
