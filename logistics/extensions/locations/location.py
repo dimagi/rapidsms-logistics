@@ -10,7 +10,7 @@ class Location(models.Model, StockCacheMixin):
     Location - the main concept of a location.  Currently covers MOHSW, Regions, Districts and Facilities.
     This could/should be broken out into subclasses.
     """
-    code = models.CharField(max_length=100, blank=False, null=False)
+    code = models.CharField(max_length=100, blank=False, null=False, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
     
