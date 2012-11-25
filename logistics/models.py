@@ -350,7 +350,7 @@ class SupplyPointBase(models.Model, StockCacheMixin):
         return self.productstock_set.filter(product__in=products)
     
     def contacts(self):
-        return Contact.objects.filter(supply_point=self)
+        return Contact.objects.filter(is_active=True, supply_point=self)
     
     def deprecate(self, new_code=None):
         """
@@ -502,13 +502,13 @@ class SupplyPointBase(models.Model, StockCacheMixin):
         return self.report(product, report_type, quantity)
 
     def reporters(self):
-        reporters = Contact.objects.filter(supply_point=self)
+        reporters = Contact.objects.filter(is_active=True, supply_point=self)
         soh_resp = config.Responsibilities.STOCK_ON_HAND_RESPONSIBILITY
         reporters = reporters.filter(role__responsibilities__code=soh_resp).distinct()
         return reporters
 
     def reportees(self):
-        reporters = Contact.objects.filter(supply_point=self)
+        reporters = Contact.objects.filter(is_active=True, supply_point=self)
         supervise_resp = config.Responsibilities.REPORTEE_RESPONSIBILITY
         reporters = reporters.filter(role__responsibilities__code=supervise_resp).distinct()
         return reporters
