@@ -207,6 +207,12 @@ class SupplyPointBase(models.Model, StockCacheMixin):
 
     def __unicode__(self):
         return self.name
+    
+    def deactivate(self):
+        """ a safe 'delete' which ensures that sms users, message logs, 
+        product reports, etc remain intact """
+        self.active = False
+        self.save()
         
     def report_status(self, days_until_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT):
         """ returns a tuple: 
@@ -625,6 +631,10 @@ class LogisticsProfileBase(models.Model):
 
     def __unicode__(self):
         return "%s (%s, %s)" % (self.user.username, self.location, self.supply_point)
+    
+    def deactivate(self):
+        self.is_active = False
+        self.save()
 
 class LogisticsProfile(LogisticsProfileBase):
     __metaclass__ = ExtensibleModelBase

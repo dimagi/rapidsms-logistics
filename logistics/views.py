@@ -221,7 +221,6 @@ def navigate(request):
             "%s?place=%s%s" % (destination, location_code, querystring))
 
 @csrf_exempt
-@cache_page(60 * 15)
 @geography_context
 @filter_context
 def dashboard(request, location_code=None, context={}, template="logistics/aggregate.html"):
@@ -349,7 +348,8 @@ def facility(req, pk=None, template="logistics/config.html"):
             SupplyPoint, pk=pk)
     if req.method == "POST":
         if req.POST["submit"] == "Delete %s" % klass:
-            facility.delete()
+            # deactivate instead of delete to preserve users & logs
+            facility.deactivate()
             return HttpResponseRedirect(
                 "%s?deleted=%s" % (reverse('facility_view'), 
                                    unicode(facility)))

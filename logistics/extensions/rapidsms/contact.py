@@ -24,6 +24,13 @@ class Contact(models.Model):
         if self.name:
             return self.name
         return unicode(self.pk)
+    
+    def deactivate(self):
+        # SMS users relinquish their phone numbers when they get deactivated
+        # so that new users can take up those numbers without getting errors
+        self.connection_set.clear()
+        self.is_active = False
+        self.save()
 
     @property
     def phone(self):
