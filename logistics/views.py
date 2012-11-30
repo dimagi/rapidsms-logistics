@@ -37,6 +37,7 @@ from logistics.reports import get_reporting_and_nonreporting_facilities
 from .models import Product
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
+from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
 
@@ -458,19 +459,22 @@ def district_dashboard(request, template="logistics/district_dashboard.html"):
                               context_instance=RequestContext(request))
 
 class LogisticsMessageLogView(RapidSMSMessagLogView):
+    def get_context(self, request, context):
+        context = super(LogisticsMessageLogView, self).get_context(request, context)
+        if request.datespan is not None and request.datespan:
+            messages = context['messages_qs']
+            messages = messages.filter(date__gte=request.datespan.startdate)\
+              .filter(date__lte=request.datespan.end_of_end_day)
+            context['messages_qs'] = messages
+            context['messages_table'] = MessageTable(messages, request=request)
+        return context
+    
     @datespan_in_request()
     def get(self, request, context=None, template="messagelog/index.html"):
         """
         NOTE: this truncates the messagelog by default to the last 30 days. 
         To get the complete message log, web users should export to excel 
         """
-        if not context:
-            context = {}
-        if request.datespan is not None and request.datespan:
-            messages = Message.objects.all()
-            messages = messages.filter(date__gte=request.datespan.startdate)\
-              .filter(date__lte=request.datespan.end_of_end_day)
-            context['messages_qs'] = messages
         return super(LogisticsMessageLogView, self).get(request, context=context, 
                                                         template=template)
 
