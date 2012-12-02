@@ -10,6 +10,14 @@
 {% block left %}
 <div class="module">
 	<h2>{{ klass }}</h2>
+	{% if search_enabled %}
+		<form method="get" id="search">
+		<label for="search">Search: </label>
+		<input type="text" name="search" id="search" value="{% if search %}{{ search }}{% endif %}"></input>
+		<input type="submit" value="Search" />
+	{% endif %}
+	</form>
+	
 	{{ table.as_html }}{% if object %}
 	<div class="toolbar">
 		<a href="{{ klass_view }}" class="add">Add a {{ klass }}</a>
