@@ -57,6 +57,6 @@ urlpatterns = patterns('',
         'logistics.views.district_dashboard',  
         name="district_dashboard"),
     url(r'^email-summary$',
-        'logistics.views.summary'
+        'logistics.views.summary',
         name="email-summary"),
 )
