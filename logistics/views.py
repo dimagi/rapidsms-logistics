@@ -509,3 +509,23 @@ class MonthPager(object):
         self.next_month = self.end_date + timedelta(days=1)
         self.show_next = True if self.end_date < datetime.utcnow().replace(day=1) else False
         self.datespan = DateSpan(self.begin_date, self.end_date)
+
+
+@geography_context
+def summary(request, context=None):
+    """
+    View for generating HTML email reports via email-reports.
+    While this can be viewed on the web, primarily this is rendered using a fake
+    request object so care should be taken accessing items on the request.
+    However request.user will be set.
+    """
+    context = context or {}
+    profile = request.user.get_profile()
+    if profile.location_id:
+        context['geography'] = profile.location
+    context['commodity_filter'] = context['commoditytype_filter'] = None
+    start = datetime.now()
+    end = start - timedelta(days=7)
+    context['datespan'] = DateSpan(start, end)
+    return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
+
