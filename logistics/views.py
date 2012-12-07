@@ -34,7 +34,7 @@ from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown
 from logistics.reports import get_reporting_and_nonreporting_facilities
-from .models import Product
+from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
 from rapidsms.models import Backend
@@ -522,10 +522,36 @@ def summary(request, context=None):
     context = context or {}
     profile = request.user.get_profile()
     if profile.location_id:
-        context['geography'] = profile.location
-    context['commodity_filter'] = context['commoditytype_filter'] = None
+        location = profile.location
+    else:
+        location = context['geography']
+    facilities = location.all_child_facilities()
     start = datetime.now()
     end = start - timedelta(days=7)
-    context['datespan'] = DateSpan(start, end)
+    datespan = DateSpan(start, end)
+    report = ReportingBreakdown(facilities, datespan, 
+        days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
+    # Determine all product types for this location
+    product_types = ProductType.objects.filter(
+        product__productstock__supply_point__in=facilities,
+        product__productstock__is_active=True
+    ).distinct()
+    for product_type in product_types:
+        counts = {}
+        total = 0
+        for key in ('stockout', 'low_stock', 'good_supply', 'overstocked', 'emergency_stock'):
+            count = getattr(location, '%s_count' % key)(
+                producttype=product_type.code, datespan=datespan
+            )
+            counts[key] = count
+            total = total + (count or 0)
+        counts['total'] = total
+        product_type.counts = counts
+    context.update({
+        'location': location,
+        'facilities': facilities,
+        'facility_count': facilities.count(),
+        'report': report,
+        'product_types': product_types,
+    })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
-

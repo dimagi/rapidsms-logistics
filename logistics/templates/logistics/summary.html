@@ -1,18 +1,47 @@
 {% extends "logistics/reports_base.html" %}
+
 {% block stylesheets %}{{ block.super }}
     <link type="text/css" rel="stylesheet" href="{{ MEDIA_URL }}logistics/stylesheets/reports.css" />
 {% endblock %}
 
-{% load i18n %}
-{% load logistics_report_tags %}
+{% load i18n logistics_report_tags math_tags %}
 
 {% block content %}
     <div class="module">
-        {% include "logistics/partials/breadcrumbs.html" %}
         <div id="main">
-            <h2 id="report-title">{{ geography.name }} {% trans "Weekly Summary Report" %}</h2>
+            <h2 id="report-title">{{ location.name }} {% trans "Weekly Summary Report" %}</h2>
             <div id="report-content">
-                {% aggregate_table geography commodity_filter commoditytype_filter datespan %}
+                <table style="width:100%">
+                    <thead>
+                        <tr><th colspan="2">Reporting</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {% with report.reported|length as reported %}
+                            <td>{% percent reported facility_count %} of facilities are reporting</td>
+                            {% endwith %}
+                            {% with report.full|length as full %}
+                            <td>{% percent full facility_count %} of facilities are submitting complete reports</td>
+                            {% endwith %}
+                        </tr>
+                    </tbody>
+                </table>
+                <table style="width:100%">
+                    <thead>
+                        <tr><th colspan="5">Stock Levels</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for product in product_types %}
+                            <tr><td>{{ product.name }}</td>
+                            {% with product.counts as counts %}
+                            <td>{% percent counts.stockout counts.total %} stockout</td>
+                            <td>{% percent counts.low_stock counts.total %} low stock</td>
+                            <td>{% percent counts.good_supply counts.total %} adequate stock</td>
+                            <td>{% percent counts.overstocked counts.total %} overstock</td></tr>
+                            {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
