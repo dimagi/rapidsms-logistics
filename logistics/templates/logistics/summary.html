@@ -4,13 +4,14 @@
     <link type="text/css" rel="stylesheet" href="{{ MEDIA_URL }}logistics/stylesheets/reports.css" />
 {% endblock %}
 
-{% load i18n logistics_report_tags math_tags %}
+{% load i18n logistics_report_tags math_tags alerts_tags %}
 
 {% block content %}
     <div class="module">
         <div id="main">
             <h2 id="report-title">{{ location.name }} {% trans "Weekly Summary Report" %}</h2>
             <div id="report-content">
+                {% alerts request %}
                 <table style="width:100%">
                     <thead>
                         <tr><th colspan="2">Reporting</th></tr>

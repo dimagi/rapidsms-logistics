@@ -525,6 +525,9 @@ def summary(request, context=None):
         location = profile.location
     else:
         location = context['geography']
+    # Set request location like place_in_request
+    # This is needed by some of the alerts
+    request.location = location
     facilities = location.all_child_facilities()
     start = datetime.now()
     end = start - timedelta(days=7)
