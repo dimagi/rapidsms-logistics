@@ -64,7 +64,7 @@ class ReportingBreakdown(object):
     def __init__(self, supply_points, datespan=None, include_late=False,
                  days_for_late=5, MNE=False, request=None):
         
-        supply_points = supply_points.filter(active=True)
+        self.supply_points = supply_points = supply_points.filter(active=True)
         
         if not datespan:
             datespan = DateSpan.since(30)
@@ -677,6 +677,8 @@ class SupplyPointRow():
     def emergency_plus_low(self): return self._call_stock_count("emergency_plus_low")
     def good_supply_count(self): return self._call_stock_count("good_supply_count")
     def overstocked_count(self): return self._call_stock_count("overstocked_count")
+    
+    def total(self): return len(self.facility_list)
     
     @property
     def consumption(self): 
