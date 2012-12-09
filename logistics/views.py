@@ -60,9 +60,9 @@ def landing_page(request):
         pass
     
     if prof and prof.supply_point:
-        return stockonhand_facility(request, request.user.get_profile().supply_point.code)
+        return stockonhand_facility(request, prof.supply_point.code)
     elif prof and prof.location:
-        return aggregate(request, request.user.get_profile().location.code)
+        return aggregate(request, prof.location.code)
     return dashboard(request)
 
 def input_stock(request, facility_code, context={}, template="logistics/input_stock.html"):
