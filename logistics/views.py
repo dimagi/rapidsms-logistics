@@ -60,9 +60,9 @@ def landing_page(request):
         pass
     
     if prof and prof.supply_point:
-        return stockonhand_facility(request, request.user.get_profile().supply_point.code)
+        return stockonhand_facility(request, prof.supply_point.code)
     elif prof and prof.location:
-        return aggregate(request, request.user.get_profile().location.code)
+        return aggregate(request, prof.location.code)
     return dashboard(request)
 
 def input_stock(request, facility_code, context={}, template="logistics/input_stock.html"):
@@ -440,16 +440,20 @@ def get_districts():
 
 @cache_page(60 * 15)
 @place_in_request()
-def district_dashboard(request, template="logistics/district_dashboard.html"):
+def district_dashboard(request, district=None, template="logistics/district_dashboard.html"):
     districts = get_districts()
-    if request.location is None:
+    if request.location is None and district is None:
         # pick a random location to start
         location_code = settings.COUNTRY
         request.location = get_object_or_404(Location, code=location_code)
         facilities = SupplyPoint.objects.all()
         #request.location = districts[0]
     else:
-        facilities = request.location.all_child_facilities()
+        if district:
+            facilities = district.all_child_facilities()
+        else:
+            facilities = request.location.all_child_facilities()
+            district = request.location
     report = ReportingBreakdown(facilities, 
                                 DateSpan.since(settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT), 
                                 days_for_late = settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
@@ -458,7 +462,7 @@ def district_dashboard(request, template="logistics/district_dashboard.html"):
                                "graph_width": 200,
                                "graph_height": 200,
                                "districts": districts.order_by("code"),
-                               "location": request.location},
+                               "location": district},
                               context_instance=RequestContext(request))
 
 class LogisticsMessageLogView(RapidSMSMessagLogView):
