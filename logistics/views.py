@@ -29,7 +29,7 @@ from logistics.charts import stocklevel_plot
 from logistics.decorators import place_in_request
 from logistics.models import ProductStock, \
     ProductReportsHelper, ProductReport, LogisticsProfile,\
-    SupplyPoint, StockTransaction
+    SupplyPoint, StockTransaction, RequisitionReport
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown
@@ -141,6 +141,9 @@ def stockonhand_facility(request, facility_code, context={}, template="logistics
     context['facility'] = facility
     context["location"] = facility.location
     context["destination_url"] = "aggregate"
+    reqs = RequisitionReport.objects.filter(supply_point=facility).order_by('-report_date')
+    if reqs:
+        context["last_requisition"] = reqs[0]
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
