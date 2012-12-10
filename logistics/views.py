@@ -534,11 +534,7 @@ def summary(request, context=None):
     datespan = DateSpan(start, end)
     report = ReportingBreakdown(facilities, datespan, 
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
-    # Determine all product types for this location
-    product_types = ProductType.objects.filter(
-        product__productstock__supply_point__in=facilities,
-        product__productstock__is_active=True
-    ).distinct()
+    product_types = ProductType.objects.all()
     for product_type in product_types:
         counts = {}
         total = 0
