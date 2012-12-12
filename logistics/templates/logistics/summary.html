@@ -39,10 +39,10 @@
                         {% for product in product_types %}
                             <tr><td>{{ product.name }}</td>
                             {% with product.counts as counts %}
-                            <td>{% percent counts.stockout counts.total %} stockout</td>
-                            <td>{% percent counts.low_stock counts.total %} low stock</td>
-                            <td>{% percent counts.good_supply counts.total %} adequate stock</td>
-                            <td>{% percent counts.overstocked counts.total %} overstock</td></tr>
+                            <td style="background-color: #ffb8ca;">{% percent counts.stockout counts.total %} stockout</td>
+                            <td style="background-color: #fff49c;">{% percent counts.low_stock counts.total %} low stock</td>
+                            <td style="background-color: #d4fff1;">{% percent counts.good_supply counts.total %} adequate stock</td>
+                            <td style="background-color: #b3c5ec;">{% percent counts.overstocked counts.total %} overstock</td></tr>
                             {% endwith %}
                         {% endfor %}
                     </tbody>
