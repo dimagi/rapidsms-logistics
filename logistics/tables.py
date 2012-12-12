@@ -47,7 +47,7 @@ class FacilityTable(Table):
     location = Column(value=_location, sortable=True, sort_key_fn=_location_sort)
 
     class Meta:
-        order_by = 'location'
+        order_by = 'name'
         per_page = 30
 
 
