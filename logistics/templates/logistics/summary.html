@@ -23,10 +23,22 @@
                     <tbody>
                         <tr>
                             {% with report.reported|length as reported %}
-                            <td>{% percent reported facility_count %} of facilities are reporting</td>
+                            {% with previous_report.reported|length as previous_reported %}
+                            <td>
+                                {% percent reported facility_count %} of facilities are reporting
+                                {% if reported > previous_reported %}&uarr;{% endif %}
+                                {% if reported < previous_reported %}&darr;{% endif %}
+                            </td>
+                            {% endwith %}
                             {% endwith %}
                             {% with report.full|length as full %}
-                            <td>{% percent full facility_count %} of facilities are submitting complete reports</td>
+                            {% with previous_report.full|length as previous_full %}
+                            <td>
+                                {% percent full facility_count %} of facilities are submitting complete reports
+                                {% if full > previous_full %}&uarr;{% endif %}
+                                {% if full < previous_full %}&darr;{% endif %}
+                            </td>
+                            {% endwith %}
                             {% endwith %}
                         </tr>
                     </tbody>

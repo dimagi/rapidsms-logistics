@@ -540,28 +540,41 @@ def summary(request, context=None):
     # This is needed by some of the alerts
     request.location = location
     facilities = location.all_child_facilities()
-    start = datetime.now()
-    end = start - timedelta(days=7)
-    datespan = DateSpan(start, end)
-    report = ReportingBreakdown(facilities, datespan, 
+    end = datetime.now()
+    start = end - timedelta(days=7)
+    currentweek = DateSpan(start, end)
+    previousweek = DateSpan(start - timedelta(days=7), start)
+    report = ReportingBreakdown(facilities, currentweek,
+        days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
+    previous_report = ReportingBreakdown(facilities, previousweek,
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
     product_types = ProductType.objects.all()
     for product_type in product_types:
         counts = {}
+        previous_counts = {}
         total = 0
+        previous_total = 0
         for key in ('stockout', 'low_stock', 'good_supply', 'overstocked', 'emergency_stock'):
             count = getattr(location, '%s_count' % key)(
-                producttype=product_type.code, datespan=datespan
+                producttype=product_type.code, datespan=currentweek
+            )
+            previous_count = getattr(location, '%s_count' % key)(
+                producttype=product_type.code, datespan=previousweek
             )
             counts[key] = count
+            previous_counts[key] = previous_count
             total = total + (count or 0)
+            previous_total = previous_total + (previous_count or 0)
         counts['total'] = total
+        previous_counts['total'] = previous_total
         product_type.counts = counts
+        product_type.previous_counts = previous_counts
     context.update({
         'location': location,
         'facilities': facilities,
         'facility_count': facilities.count(),
         'report': report,
+        'previous_report': previous_report,
         'product_types': product_types,
         'notifications': Notification.objects.filter(is_open=True, visible_to__user=request.user)
     })
