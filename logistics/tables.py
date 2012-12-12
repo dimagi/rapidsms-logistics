@@ -29,6 +29,10 @@ def _edit_facility_link(cell):
     return reverse(
         'facility_edit',
         args=[cell.row.pk])
+def _location_sort(object):
+    if object.location.tree_parent:
+        return object.location.tree_parent.name.lower()
+    return object.location.name.lower()
 def _location(cell):
     """ 
     Technically, the location of Ada Health Clinic is Ada Health Clinic
@@ -40,10 +44,10 @@ def _location(cell):
     return cell.object.location
 class FacilityTable(Table):
     name = Column(link=_edit_facility_link)
-    location = Column(value=_location)
+    location = Column(value=_location, sortable=True, sort_key_fn=_location_sort)
 
     class Meta:
-        order_by = 'location'
+        order_by = 'name'
         per_page = 30
 
 

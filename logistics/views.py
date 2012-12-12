@@ -21,7 +21,7 @@ from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 from rapidsms.conf import settings
 from rapidsms.contrib.locations.models import Location
-from rapidsms.contrib.messagelog.views import message_log as rapidsms_messagelog
+from rapidsms.contrib.messagelog.views import MessageLogView as RapidSMSMessagLogView
 from dimagi.utils.dates import DateSpan
 from dimagi.utils.decorators.datespan import datespan_in_request
 from email_reports.decorators import magic_token_required
@@ -29,7 +29,7 @@ from logistics.charts import stocklevel_plot
 from logistics.decorators import place_in_request
 from logistics.models import ProductStock, \
     ProductReportsHelper, ProductReport, LogisticsProfile,\
-    SupplyPoint, StockTransaction
+    SupplyPoint, StockTransaction, RequisitionReport
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown
@@ -37,6 +37,7 @@ from logistics.reports import get_reporting_and_nonreporting_facilities
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
+from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
 
@@ -59,9 +60,9 @@ def landing_page(request):
         pass
     
     if prof and prof.supply_point:
-        return stockonhand_facility(request, request.user.get_profile().supply_point.code)
+        return stockonhand_facility(request, prof.supply_point.code)
     elif prof and prof.location:
-        return aggregate(request, request.user.get_profile().location.code)
+        return aggregate(request, prof.location.code)
     return dashboard(request)
 
 def input_stock(request, facility_code, context={}, template="logistics/input_stock.html"):
@@ -140,6 +141,9 @@ def stockonhand_facility(request, facility_code, context={}, template="logistics
     context['facility'] = facility
     context["location"] = facility.location
     context["destination_url"] = "aggregate"
+    reqs = RequisitionReport.objects.filter(supply_point=facility).order_by('-report_date')
+    if reqs:
+        context["last_requisition"] = reqs[0]
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
@@ -457,21 +461,25 @@ def district_dashboard(request, template="logistics/district_dashboard.html"):
                                "location": request.location},
                               context_instance=RequestContext(request))
 
-@datespan_in_request()
-def message_log(request, context=None, template="messagelog/index.html"):
-    """
-    NOTE: this truncates the messagelog by default to the last 30 days. 
-    To get the complete message log, web users should export to excel 
-    """
-    if not context:
-        context = {}
-    if request.datespan is not None and request.datespan:
-        messages = Message.objects.all()
-        messages = messages.filter(date__gte=request.datespan.startdate)\
-          .filter(date__lte=request.datespan.end_of_end_day)
-        context['messages_qs'] = messages
-    return rapidsms_messagelog(request, context=context, 
-                               template=template)
+class LogisticsMessageLogView(RapidSMSMessagLogView):
+    def get_context(self, request, context):
+        context = super(LogisticsMessageLogView, self).get_context(request, context)
+        if request.datespan is not None and request.datespan:
+            messages = context['messages_qs']
+            messages = messages.filter(date__gte=request.datespan.startdate)\
+              .filter(date__lte=request.datespan.end_of_end_day)
+            context['messages_qs'] = messages
+            context['messages_table'] = MessageTable(messages, request=request)
+        return context
+    
+    @datespan_in_request()
+    def get(self, request, context=None, template="messagelog/index.html"):
+        """
+        NOTE: this truncates the messagelog by default to the last 30 days. 
+        To get the complete message log, web users should export to excel 
+        """
+        return super(LogisticsMessageLogView, self).get(request, context=context, 
+                                                        template=template)
 
 def messages_by_carrier(request, template="logistics/messages_by_carrier.html"):
     earliest_msg = Message.objects.all().order_by("date")[0].date

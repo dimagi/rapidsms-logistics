@@ -21,7 +21,7 @@
                 {% if stockonhand.date_last_stocked %}
                     {{ stockonhand|historical_date_last_stocked:datespan.enddate|timesince:datespan.enddate }}
                 {% else %}
-                    Ongoing
+                    Always
                 {% endif %}
             {% endif %}
         </td>

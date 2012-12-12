@@ -60,7 +60,8 @@ class App(AppBase):
             error_message = error_message + " Please report %(missing)s."
         kwargs['err'] = ", ".join(unicode(e) for e in stock_report.errors if not isinstance(e, UnknownCommodityCodeError))
         bad_codes = ", ".join(unicode(e) for e in stock_report.errors if isinstance(e, UnknownCommodityCodeError))
-        kwargs['err'] = kwargs['err'] + "Unrecognized commodity codes: %(bad_codes)s." % {'bad_codes':bad_codes}
+        if bad_codes:
+            kwargs['err'] = kwargs['err'] + "Unrecognized commodity codes: %(bad_codes)s." % {'bad_codes':bad_codes}
         error_message = ("{0} {1}".format(error_message, config.Messages.GET_HELP_MESSAGE)).strip()
         message.respond(error_message, **kwargs)
     
