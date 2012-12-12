@@ -34,10 +34,13 @@
 </div>
 </span>
 
-<div class="module noprint">
-    <h2>{% trans 'Alerts' %}</h2>
-    {% alerts request %}
-</div>
+    {% block product_data %}
+    <div class="module toppadded">
+        <h2>Product Availability Summary</h2>
+        {% product_availability_summary_by_facility location %}
+    </div>
+    {% endblock %}
+
 <div class="two-columns toppadded">
     <div class="col-1">
         <div class="module"> 
@@ -57,10 +60,9 @@
     </div>
     <div class="clear-hack"></div>
 </div>
-	{% block product_data %}
-	<div class="module toppadded">
-		<h2>Product Availability Summary</h2>
-		{% product_availability_summary_by_facility location %}
-	</div>
-	{% endblock %}
+
+<div class="module noprint">
+    <h2>{% trans 'Alerts' %}</h2>
+    {% alerts request %}
+</div>
 {% endblock %}
