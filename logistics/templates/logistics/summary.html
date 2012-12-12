@@ -5,9 +5,17 @@
 {% block content %}
     <div class="module">
         <div id="main">
-            <h2 id="report-title">{{ location.name }} {% trans "Weekly Summary Report" %}</h2>
+            <h2 id="report-title" style="margin-bottom: 10px;">{{ location.name }} {% trans "Weekly Summary Report" %}</h2>
             <div id="report-content">
-                {% alerts request %}
+                <table style="width:100%; margin-bottom: 10px;">
+                    <tbody>
+                        {% for note in notifications %}
+                            <tr><td>{{ note.text }}</td></tr>
+                        {% empty %}
+                            <tr><td>No current alerts.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 <table style="width:100%; margin-bottom: 10px;">
                     <thead>
                         <tr><th colspan="2">Reporting</th></tr>

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # vim: ai ts=4 sts=4 et sw=4 encoding=utf-8
+from __future__ import absolute_import
+
 from logistics.const import Reports
 
 from dimagi.utils import csv 
@@ -40,6 +42,7 @@ from rapidsms.contrib.messagelog.models import Message
 from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
+from alerts.models import Notification
 
 
 def no_ie_allowed(request, template="logistics/no_ie_allowed.html"):
@@ -560,5 +563,6 @@ def summary(request, context=None):
         'facility_count': facilities.count(),
         'report': report,
         'product_types': product_types,
+        'notifications': Notification.objects.filter(is_open=True, visible_to__user=request.user)
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
