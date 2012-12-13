@@ -1,0 +1,57 @@
+{% extends "logistics/reports_base.html" %}
+
+{% load i18n logistics_report_tags math_tags alerts_tags %}
+
+{% block content %}
+    <div class="module">
+        <div id="main">
+            <div id="report-title">
+                <h2 style="margin-bottom: 10px; background-color: #000; font-size: 160%; padding: 0.3125em; color: #fff; line-height: 1; font-weight: normal;">
+                    {{ location.name }} {% trans "Weekly Summary Report" %}
+                </h2>
+            </div>
+            <div id="report-content">
+                <table style="width:100%; margin-bottom: 10px;">
+                    <tbody>
+                        {% for note in notifications %}
+                            <tr><td>{{ note.text }}</td></tr>
+                        {% empty %}
+                            <tr><td>No current alerts.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <table style="width:100%; margin-bottom: 10px;">
+                    <thead>
+                        <tr style="text-align: left;"><th colspan="2" style="padding: 0.5em; border: 0; background: #fff;">Reporting</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {% with report.reported|length as reported %}
+                            <td style="padding: 0.5em; border: 1px solid #000;">{% percent reported facility_count %} of facilities are reporting</td>
+                            {% endwith %}
+                            {% with report.full|length as full %}
+                            <td style="padding: 0.5em; border: 1px solid #000;">{% percent full facility_count %} of facilities are submitting complete reports</td>
+                            {% endwith %}
+                        </tr>
+                    </tbody>
+                </table>
+                <table style="width:100%">
+                    <thead>
+                        <tr style="text-align: left;"><th colspan="5" style="padding: 0.5em; border: 0; background: #fff;">Stock Levels</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for product in product_types %}
+                            <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product.name }}</td>
+                            {% with product.counts as counts %}
+                            <td style="background-color: #ffb8ca; padding: 0.5em; border: 1px solid #000;"">{% percent counts.stockout counts.total %} stockout</td>
+                            <td style="background-color: #fff49c; padding: 0.5em; border: 1px solid #000;"">{% percent counts.low_stock counts.total %} low stock</td>
+                            <td style="background-color: #d4fff1; padding: 0.5em; border: 1px solid #000;"">{% percent counts.good_supply counts.total %} adequate stock</td>
+                            <td style="background-color: #b3c5ec; padding: 0.5em; border: 1px solid #000;"">{% percent counts.overstocked counts.total %} overstock</td></tr>
+                            {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

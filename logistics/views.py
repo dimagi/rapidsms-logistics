@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # vim: ai ts=4 sts=4 et sw=4 encoding=utf-8
+from __future__ import absolute_import
+
 from logistics.const import Reports
 
 from dimagi.utils import csv 
@@ -34,12 +36,13 @@ from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown
 from logistics.reports import get_reporting_and_nonreporting_facilities
-from .models import Product
+from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
 from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
+from alerts.models import Notification
 
 
 def no_ie_allowed(request, template="logistics/no_ie_allowed.html"):
@@ -517,3 +520,49 @@ class MonthPager(object):
         self.next_month = self.end_date + timedelta(days=1)
         self.show_next = True if self.end_date < datetime.utcnow().replace(day=1) else False
         self.datespan = DateSpan(self.begin_date, self.end_date)
+
+
+@geography_context
+def summary(request, context=None):
+    """
+    View for generating HTML email reports via email-reports.
+    While this can be viewed on the web, primarily this is rendered using a fake
+    request object so care should be taken accessing items on the request.
+    However request.user will be set.
+    """
+    context = context or {}
+    profile = request.user.get_profile()
+    if profile.location_id:
+        location = profile.location
+    else:
+        location = context['geography']
+    # Set request location like place_in_request
+    # This is needed by some of the alerts
+    request.location = location
+    facilities = location.all_child_facilities()
+    end = datetime.now()
+    start = end - timedelta(days=7)
+    datespan = DateSpan(start, end)
+    report = ReportingBreakdown(facilities, datespan, 
+        days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
+    product_types = ProductType.objects.all()
+    for product_type in product_types:
+        counts = {}
+        total = 0
+        for key in ('stockout', 'low_stock', 'good_supply', 'overstocked', 'emergency_stock'):
+            count = getattr(location, '%s_count' % key)(
+                producttype=product_type.code, datespan=datespan
+            )
+            counts[key] = count
+            total = total + (count or 0)
+        counts['total'] = total
+        product_type.counts = counts
+    context.update({
+        'location': location,
+        'facilities': facilities,
+        'facility_count': facilities.count(),
+        'report': report,
+        'product_types': product_types,
+        'notifications': Notification.objects.filter(is_open=True, visible_to__user=request.user)
+    })
+    return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
