@@ -540,8 +540,8 @@ def summary(request, context=None):
     # This is needed by some of the alerts
     request.location = location
     facilities = location.all_child_facilities()
-    start = datetime.now()
-    end = start - timedelta(days=7)
+    end = datetime.now()
+    start = end - timedelta(days=7)
     datespan = DateSpan(start, end)
     report = ReportingBreakdown(facilities, datespan, 
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
