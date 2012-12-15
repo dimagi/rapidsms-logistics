@@ -3,6 +3,14 @@
 {% load i18n logistics_report_tags math_tags alerts_tags %}
 
 {% block content %}
+
+<style>
+	.stockout {background-color:#ffb8ca;}
+	.low_supply {background-color:#fff49c;}
+	.good_supply {background-color:#d4fff1;}
+	.overstocked {background-color:#b3c5ec;}
+</style>
+
     <div class="module">
         <div id="main">
             <div id="report-title">
@@ -43,10 +51,10 @@
                         {% for product in products %}
                             <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product.name }}</td>
                             {% with product.counts as counts %}
-                            <td style="background-color: #ffb8ca; padding: 0.5em; border: 1px solid #000;"">{% percent counts.stockout counts.total %} stockout</td>
-                            <td style="background-color: #fff49c; padding: 0.5em; border: 1px solid #000;"">{% percent counts.low_stock counts.total %} low stock</td>
-                            <td style="background-color: #d4fff1; padding: 0.5em; border: 1px solid #000;"">{% percent counts.good_supply counts.total %} adequate stock</td>
-                            <td style="background-color: #b3c5ec; padding: 0.5em; border: 1px solid #000;"">{% percent counts.overstocked counts.total %} overstock</td></tr>
+	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.stockout %}stockout{% endif %}">{% percent counts.stockout counts.total %} stockout</td>
+	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.low_stock %}low_supply{% endif %}">{% percent counts.low_stock counts.total %} low stock</td>
+	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.good_supply %}good_supply{% endif %}">{% percent counts.good_supply counts.total %} adequate stock</td>
+	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.overstocked %}overstocked{% endif %}">{% percent counts.overstocked counts.total %} overstock</td></tr>
                             {% endwith %}
                         {% endfor %}
                     </tbody>
