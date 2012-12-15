@@ -40,7 +40,7 @@
                         <tr style="text-align: left;"><th colspan="5" style="padding: 0.5em; border: 0; background: #fff;">Stock Levels</th></tr>
                     </thead>
                     <tbody>
-                        {% for product in product_types %}
+                        {% for product in products %}
                             <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product.name }}</td>
                             {% with product.counts as counts %}
                             <td style="background-color: #ffb8ca; padding: 0.5em; border: 1px solid #000;"">{% percent counts.stockout counts.total %} stockout</td>

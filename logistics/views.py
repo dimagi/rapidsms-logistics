@@ -545,24 +545,24 @@ def summary(request, context=None):
     datespan = DateSpan(start, end)
     report = ReportingBreakdown(facilities, datespan, 
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
-    product_types = ProductType.objects.all()
-    for product_type in product_types:
+    products = Product.objects.filter(is_active=True).order_by('type', 'name')
+    for product in products:
         counts = {}
         total = 0
         for key in ('stockout', 'low_stock', 'good_supply', 'overstocked', 'emergency_stock'):
             count = getattr(location, '%s_count' % key)(
-                producttype=product_type.code, datespan=datespan
+                product=product.code, datespan=datespan
             )
             counts[key] = count
             total = total + (count or 0)
         counts['total'] = total
-        product_type.counts = counts
+        product.counts = counts    
     context.update({
         'location': location,
         'facilities': facilities,
         'facility_count': facilities.count(),
         'report': report,
-        'product_types': product_types,
+        'products': products,
         'notifications': Notification.objects.filter(is_open=True, visible_to__user=request.user)
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
