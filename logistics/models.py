@@ -1620,7 +1620,7 @@ class ProductReportsHelper(object):
         
     def _list_by_name(self, list_of_codes):
         products_by_name = [self.get_product(code).name for code in list_of_codes]
-        return " ".join(products_by_name)
+        return ", ".join(products_by_name)
         
     def stockouts(self):
         return self._list_by_code(self._stockouts())        
