@@ -550,8 +550,12 @@ def summary(request, context=None):
         counts = {}
         total = 0
         for key in ('stockout_count', 'emergency_plus_low', 'good_supply_count', 'overstocked_count'):
-            count = getattr(location, key)(
-                product=product.code, datespan=datespan
+            count = location._get_stock_count_for_facilities(
+                facilities=facilities,
+                operation='%s_count' % key,
+                product=product.code,
+                producttype=None,
+                datespan=datespan
             )
             counts[key] = count
             total = total + (count or 0)
