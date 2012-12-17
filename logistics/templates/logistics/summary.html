@@ -60,6 +60,13 @@
                     </tbody>
                 </table>
             </div>
+            <div style="display: none;" id="report-subject">
+                {% if notifications %}
+                    {{ notifications.0.text }}
+                {% else %}
+                    {{ location.name }} {% trans "Weekly Summary Report" %}
+                {% endif %}
+            </div>
         </div>
     </div>
 {% endblock %}
