@@ -763,7 +763,7 @@ class ProductStock(models.Model):
         b) emergency levels not yet defined
         """
         if self.emergency_reorder_level is not None:
-            if self.quantity <= self.emergency_reorder_level:
+            if self.quantity <= self.emergency_reorder_level and self.quantity > 0:
                 return True
         return False
 
@@ -1051,8 +1051,9 @@ class StockRequest(models.Model):
                 # confusingly, we don't flag emergencies unless it is an 
                 # emergency level AND an emergency order. this logic
                 # is probably not ideal
-                is_emergency = stock_report.report_type == Reports.EMERGENCY_SOH and \
-                               current_stock.is_below_emergency_level()
+                is_emergency = stock_report.report_type == Reports.EMERGENCY_SOH and (
+                               current_stock.is_below_emergency_level() or
+                               current_stock.is_stocked_out())
                 req = StockRequest.objects.create(product=product, 
                                                   supply_point=stock_report.supply_point,
                                                   status=StockRequestStatus.REQUESTED,
