@@ -549,8 +549,8 @@ def summary(request, context=None):
     for product in products:
         counts = {}
         total = 0
-        for key in ('stockout', 'low_stock', 'good_supply', 'overstocked', 'emergency_stock'):
-            count = getattr(location, '%s_count' % key)(
+        for key in ('stockout_count', 'emergency_plus_low', 'good_supply_count', 'overstocked_count'):
+            count = getattr(location, key)(
                 product=product.code, datespan=datespan
             )
             counts[key] = count
