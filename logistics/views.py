@@ -6,7 +6,7 @@ from logistics.const import Reports
 
 from dimagi.utils import csv 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import permission_required
@@ -144,6 +144,8 @@ def stockonhand_facility(request, facility_code, context={}, template="logistics
     context['facility'] = facility
     context["location"] = facility.location
     context["destination_url"] = "aggregate"
+    first_of_month = date(day=1, month=date.today().month, year=date.today().year)
+    context["previous_month"] = first_of_month - timedelta(days=1)
     reqs = RequisitionReport.objects.filter(supply_point=facility).order_by('-report_date')
     if reqs:
         context["last_requisition"] = reqs[0]
