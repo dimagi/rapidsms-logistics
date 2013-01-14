@@ -2,7 +2,8 @@ from __future__ import absolute_import
 from datetime import datetime, timedelta
 from alerts import Alert
 from django.core.urlresolvers import reverse
-from logistics.decorators import place_in_request, return_if_place_not_set
+from logistics.decorators import place_in_request_with_context, \
+    return_if_place_not_set_with_context
 from logistics.reports import get_reporting_and_nonreporting_facilities
 
 class NonReportingFacilityAlert(Alert):
@@ -16,8 +17,8 @@ class NonReportingFacilityAlert(Alert):
         return "%(facility)s has not reported in the last month." % \
                {'facility': self._facility.name}
 
-@place_in_request()
-def non_reporting_facilities(request):
+@place_in_request_with_context()
+def non_reporting_facilities(context, request):
     on_time, late = get_reporting_and_nonreporting_facilities(datetime.utcnow() - timedelta(days=32), 
                                                               location=request.location)
     if not late:
@@ -35,9 +36,9 @@ class FacilitiesWithoutRemindersAlert(Alert):
         return "%(place)s has no reminders configured." % \
                 {"place": self._supply_point.name}
 
-@place_in_request()
-@return_if_place_not_set()
-def facilities_without_reminders(request):
+@place_in_request_with_context()
+@return_if_place_not_set_with_context()
+def facilities_without_reminders(context, request):
     facilities = request.location.all_child_facilities()
     if not facilities:
         return None
@@ -55,9 +56,9 @@ class FacilitiesWithoutReportersAlert(Alert):
         return "%(place)s has no reporters registered." % \
                 {"place": self._supply_point.name}
 
-@place_in_request()
-@return_if_place_not_set()
-def facilities_without_reporters(request):
+@place_in_request_with_context()
+@return_if_place_not_set_with_context()
+def facilities_without_reporters(context, request):
     facilities = request.location.all_child_facilities()
     if not facilities:
         return None
