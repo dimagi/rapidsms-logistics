@@ -23,9 +23,7 @@
                 <th>{% trans "Units" %}</th>
                 <th>{% trans "Average Monthly Consumption (Manual)" %}</th>
                 <th>{% trans "Average Monthly Consumption (Calculated)" %}</th>
-                {% if perms.logistics %}
                 <th>{% trans "Use Automatic Consumption?" %}</th>
-                {% endif %}
             </tr>
             </thead>
             <tbody>
@@ -35,15 +33,12 @@
                         <td><input type="text" name="{{ stock.product.sms_code }}" id="id_{{ stock.product }}" value="{{ stock.quantity|default_if_none:'' }}"/></td>
                         <td><input type="text" name="{{ stock.product.sms_code }}_receipt" id="id_{{ stock.product }}_receipt" value="0"/></td>
                         <td>{{ stock.product.units }}</td>
-                        {% if perms.logistics %}
                         <td><input type="text" name="{{ stock.product.sms_code }}_consumption" id="id_{{ stock.product.sms_code }}_consumption" value="{{ stock.manual_monthly_consumption|default_if_none:'' }}"/></td>
                         <td>{{ stock.auto_monthly_consumption|default_if_none:'' }}</td>
                         <td>
                             <input type="checkbox" name="{{ stock.product.sms_code }}_use_auto_consumption" id="id_{{ stock.product.sms_code }}__use_auto_consumption"
                             {% if stock.use_auto_consumption %}checked="checked"{% endif %}/>
                         </td>
-                        {% else %}
-                        {% endif %}
                     </tr>
                 {% endfor %}
             </tbody>
