@@ -1,6 +1,7 @@
 import json
 from datetime import timedelta, datetime
 from django.core.urlresolvers import reverse
+from django.db.models import Sum
 from django.db.models.expressions import F
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
@@ -54,6 +55,64 @@ def _seconds(td):
     Because timedelta.total_seconds() is 2.7+ only.
     """
     return td.days * 24 * 60 * 60 + td.seconds
+
+def get_aggregate_consumption_from_stocks(stocks):
+    # NB: we do not yet support historical consumption, 
+    # since that's its own giant bag of worms
+    return (stocks.filter(use_auto_consumption=False).exclude(manual_monthly_consumption=None).aggregate(consumption=Sum('manual_monthly_consumption'))['consumption'] or 0) + \
+        (stocks.filter(use_auto_consumption=True).exclude(auto_monthly_consumption=None).aggregate(consumption=Sum('auto_monthly_consumption'))['consumption'] or 0) + \
+        (stocks.filter(use_auto_consumption=True).filter(auto_monthly_consumption=None).aggregate(consumption=Sum('manual_monthly_consumption'))['consumption'] or 0)
+    
+class TotalStockByLocation(object):
+    """
+    Given a query set of supply points, get an object for displaying stock 
+    totals, consumption totals, and total stock status.
+    
+    NOTE: we use only the current consumption value, even if looking at historical data
+    since we don't store enough information to re-create historical consumption
+    """
+    def __init__(self, supply_points, datespan=None):
+        self.products = Product.objects.filter(is_active=True).order_by('type', 'name')
+        for product in self.products:
+            stocks = ProductStock.objects.filter(is_active=True, product__is_active=True, product=product)\
+                      .filter(supply_point__in=supply_points)\
+                      .select_related("supply_point", "supply_point__type", "product")
+            product.facility_count = stocks.count()
+            product.total_stock = 0
+            product.total_stock_w_consumption = 0
+            for stock in stocks:
+                stock.roll_back_to(datespan)
+                product.total_stock = product.total_stock + (stock.quantity or 0)
+                if stock.monthly_consumption:
+                    product.total_stock_w_consumption = product.total_stock_w_consumption + (stock.quantity or 0)
+            product.consumption = get_aggregate_consumption_from_stocks(stocks)
+            product.stockout_count = stocks.filter(quantity=0).count()
+            if not product.consumption:
+                if product.total_stock == 0:
+                    product.months_of_stock = 0
+                else:
+                    product.months_of_stock = "Unknown"
+            else:
+                product.months_of_stock = product.total_stock_w_consumption / product.consumption
+            product.stock_status = self._calc_stock_status(product)
+
+    def _calc_stock_status(self, product):
+        # here we encode information on calculating aggregate stock status
+        # TBD how useful this is (since usually overstock/low stock is determined on 
+        # an individual facility basis)
+        if product.total_stock == 0:
+            return "Stockout"
+        if not product.consumption:
+            return "Unknown"
+        reorder_level = product.consumption*settings.LOGISTICS_REORDER_LEVEL_IN_MONTHS 
+        overstock_level = product.consumption*settings.LOGISTICS_MAXIMUM_LEVEL_IN_MONTHS 
+        if product.total_stock_w_consumption == 0:
+            return 'Stockout'
+        elif product.total_stock_w_consumption <= reorder_level:
+            return "Low"
+        elif product.total_stock_w_consumption >= overstock_level:
+            return "Overstock"
+        return "Adequate"
 
 class ReportingBreakdown(object):
     """

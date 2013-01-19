@@ -680,7 +680,16 @@ class ProductStock(models.Model):
     @monthly_consumption.setter
     def monthly_consumption(self, value):
         self.manual_monthly_consumption = value
-
+    
+    def roll_back_to(self, datespan):
+        # set 'quantity' to a historical date
+        if datespan and not datespan.is_default:
+            historical_stock = self.supply_point.historical_stock_by_date(self.product, 
+                                                                          datespan.end_of_end_day - timedelta(days=1), 
+                                                                          default_value=None)
+            if historical_stock is not None:
+                self.quantity = historical_stock
+                
     def update_auto_consumption(self):
         d = self.daily_consumption
         if d:

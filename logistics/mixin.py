@@ -16,6 +16,7 @@ class StockCacheMixin():
         refreshes all the stock count values in the cache in bulk
         returns None
         """
+        from logistics.reports import get_aggregate_consumption_from_stocks
         stocks = self._filtered_stock(product, producttype)\
                   .filter(supply_point__in=facilities)\
                   .select_related("supply_point", "supply_point__type", "product")
@@ -32,12 +33,7 @@ class StockCacheMixin():
         overstocked_count = 0
         other_count = 0
         for stock in stocks:
-            if datespan and not datespan.is_default:
-                historical_stock = stock.supply_point.historical_stock_by_date(stock.product, 
-                                                                               datespan.end_of_end_day - timedelta(days=1), 
-                                                                               default_value=None)
-                if historical_stock is not None:
-                    stock.quantity = historical_stock
+            stock.roll_back_to(datespan)
             if stock.quantity == 0:
                 stockout_count = stockout_count + 1
             elif stock.quantity > 0:
@@ -74,7 +70,7 @@ class StockCacheMixin():
                   adequate_supply_count, settings.LOGISTICS_SPOT_CACHE_TIMEOUT)       
         cache.set(self._cache_key('overstocked_count', product, producttype, datespan), 
                   overstocked_count, settings.LOGISTICS_SPOT_CACHE_TIMEOUT)
-        consumption = stocks.exclude(manual_monthly_consumption=None).aggregate(consumption=Sum('manual_monthly_consumption'))['consumption']
+        consumption = get_aggregate_consumption_from_stocks(stocks)
         # NB: we do not yet support historical consumption, 
         # since that's its own giant bag of worms
         cache.set(self._cache_key('consumption', product, producttype, datespan), 

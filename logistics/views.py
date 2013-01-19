@@ -34,7 +34,7 @@ from logistics.models import ProductStock, \
     SupplyPoint, StockTransaction, RequisitionReport
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
-from logistics.reports import ReportingBreakdown
+from logistics.reports import ReportingBreakdown, TotalStockByLocation
 from logistics.reports import get_reporting_and_nonreporting_facilities
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
@@ -547,27 +547,12 @@ def summary(request, context=None):
     datespan = DateSpan(start, end)
     report = ReportingBreakdown(facilities, datespan, 
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
-    products = Product.objects.filter(is_active=True).order_by('type', 'name')
-    for product in products:
-        counts = {}
-        total = 0
-        for key in ('stockout_count', 'emergency_plus_low', 'good_supply_count', 'overstocked_count'):
-            count = location._get_stock_count_for_facilities(
-                facilities=facilities,
-                operation=key,
-                product=product.code,
-                producttype=None,
-                datespan=datespan
-            )
-            counts[key] = count
-            total = total + (count or 0)
-        counts['total'] = total
-        product.counts = counts    
+    products_by_location = TotalStockByLocation(facilities, datespan).products
     context.update({
         'location': location,
         'facilities': facilities,
         'facility_count': facilities.count(),
         'report': report,
-        'products': products,
+        'product_stats': products_by_location,
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))

@@ -28,17 +28,30 @@
                 </table>
                 <table style="width:100%">
                     <thead>
-                        <tr style="text-align: left;"><th colspan="5" style="padding: 0.5em; border: 0; background: #fff;">Stock Levels</th></tr>
+                        <tr style="text-align: left;">
+                            <th style="padding: 0.5em; border: 0; background: #fff;">Product</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">% Facilities<br/> with Stockouts</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">Total # Facilities<br/>Registered with this Product</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">Total Stock</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">Monthly Consumption</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">Months of Stock</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">Stock Status</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        {% for product in products %}
-                            <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product.name }}</td>
-                            {% with product.counts as counts %}
-	                            <td style="{%if counts.stockout_count %}background-color: #ffb8ca; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.stockout_count counts.total %} stockout</td>
-	                            <td style="{%if counts.emergency_plus_low %}background-color: #fff49c; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.emergency_plus_low counts.total %} low stock</td>
-	                            <td style="{%if counts.good_supply_count %}background-color: #d4fff1; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.good_supply_count counts.total %} adequate stock</td>
-	                            <td style="{%if counts.overstocked_count %}background-color: #b3c5ec; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.overstocked_count counts.total %} overstock</td></tr>
-                            {% endwith %}
+                        {% for product_stat in product_stats %}
+                            <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product_stat.name }}</td>
+                            <td style="padding: 0.5em; border: 1px solid #000;"">{% percent product_stat.stockout_count product_stat.facility_count %} 
+                                <span style="color:grey ; font-size:0.75em">({{product_stat.stockout_count}})</span></td>
+                            <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.facility_count }}</td>
+                            <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.total_stock }}</td>
+                            <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.consumption }}</td>
+                            <td style="padding: 0.5em; border: 1px solid #000;""><strong>{{ product_stat.months_of_stock }}</strong></td>
+                            <td style="{%ifequal product_stat.stock_status "Stockout" %}background-color: #ff9899; {% endifequal %}
+                                       {%ifequal product_stat.stock_status "Low" %}background-color: #fff6cf;; {% endifequal %}
+                                       {%ifequal product_stat.stock_status "Overstocked" %}background-color: #bf7ebe;; {% endifequal %}
+                                       {%ifequal product_stat.stock_status "Adequate" %}background-color: #9acc99;; {% endifequal %}
+                                       padding: 0.5em; border: 1px solid #000;""><strong>{{ product_stat.stock_status }}</strong></td>
                         {% endfor %}
                     </tbody>
                 </table>
