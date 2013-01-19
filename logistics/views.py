@@ -569,6 +569,5 @@ def summary(request, context=None):
         'facility_count': facilities.count(),
         'report': report,
         'products': products,
-        'notifications': Notification.objects.filter(is_open=True, visible_to__user=request.user)
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))

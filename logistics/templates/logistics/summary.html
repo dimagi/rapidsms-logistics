@@ -20,15 +20,6 @@
             </div>
             <div id="report-content">
                 <table style="width:100%; margin-bottom: 10px;">
-                    <tbody>
-                        {% for note in notifications %}
-                            <tr><td>{{ note.text }}</td></tr>
-                        {% empty %}
-                            <tr><td>No current alerts.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <table style="width:100%; margin-bottom: 10px;">
                     <thead>
                         <tr style="text-align: left;"><th colspan="2" style="padding: 0.5em; border: 0; background: #fff;">Reporting</th></tr>
                     </thead>
