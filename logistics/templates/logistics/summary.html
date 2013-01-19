@@ -3,14 +3,6 @@
 {% load i18n logistics_report_tags math_tags alerts_tags %}
 
 {% block content %}
-
-<style>
-	.stockout {background-color:#ffb8ca;}
-	.low_supply {background-color:#fff49c;}
-	.good_supply {background-color:#d4fff1;}
-	.overstocked {background-color:#b3c5ec;}
-</style>
-
     <div class="module">
         <div id="main">
             <div id="report-title">
@@ -42,10 +34,10 @@
                         {% for product in products %}
                             <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product.name }}</td>
                             {% with product.counts as counts %}
-	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.stockout_count %}stockout{% endif %}">{% percent counts.stockout_count counts.total %} stockout</td>
-	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.emergency_plus_low %}low_supply{% endif %}">{% percent counts.emergency_plus_low counts.total %} low stock</td>
-	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.good_supply_count %}good_supply{% endif %}">{% percent counts.good_supply_count counts.total %} adequate stock</td>
-	                            <td style="padding: 0.5em; border: 1px solid #000;" class="{%if counts.overstocked_count %}overstocked{% endif %}">{% percent counts.overstocked_count counts.total %} overstock</td></tr>
+	                            <td style="{%if counts.stockout_count %}background-color: #ffb8ca; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.stockout_count counts.total %} stockout</td>
+	                            <td style="{%if counts.emergency_plus_low %}background-color: #fff49c; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.emergency_plus_low counts.total %} low stock</td>
+	                            <td style="{%if counts.good_supply_count %}background-color: #d4fff1; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.good_supply_count counts.total %} adequate stock</td>
+	                            <td style="{%if counts.overstocked_count %}background-color: #b3c5ec; {% endif %}padding: 0.5em; border: 1px solid #000;"">{% percent counts.overstocked_count counts.total %} overstock</td></tr>
                             {% endwith %}
                         {% endfor %}
                     </tbody>
