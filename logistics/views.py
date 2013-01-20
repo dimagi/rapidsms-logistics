@@ -558,6 +558,7 @@ def summary(request, location_code=None, context=None):
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
 
+<<<<<<< HEAD
 @place_in_request()
 @filter_context
 @datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS*4)
@@ -618,3 +619,21 @@ def export_reporting(request):
 def export_periodic_stock(request):
     fd, path = create_export_periodic_stock(request)
     return _excel_response(path, "export_periodic_stock.xls")
+
+@csrf_exempt
+@cache_page(60 * 15)
+@geography_context
+@filter_context
+@magic_token_required()
+@datespan_in_request()
+def facilities_by_products(request, location_code=None, context={}, template="logistics/facilities_by_products.html"):
+    if location_code is None:
+        location_code = settings.COUNTRY
+    location = get_object_or_404(Location, code=location_code)
+    facilities = location.all_child_facilities()
+    context['location'] = location
+    context['destination_url'] = 'aggregate'
+    context['product_stats'] = TotalStockByLocation(facilities).products
+    return render_to_response(
+        template, context, context_instance=RequestContext(request)
+    )
