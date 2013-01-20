@@ -23,35 +23,30 @@
 		                <table style="width:100%">
 		                    <thead>
 		                        <tr style="text-align: left;">
-		                            <th style="padding: 0.5em; border: 0; background: #fff;">Product</th>
-		                            <th style="padding: 0.5em; border: 0; background: #fff;">Total Stock</th>
-		                            <th style="padding: 0.5em; border: 0; background: #fff;">Monthly Consumption</th>
-		                            <th style="padding: 0.5em; border: 0; background: #fff;">Months of Stock</th>
-		                            <th style="padding: 0.5em; border: 0; background: #fff;">Stock Status</th>
+		                            <th>Product</th>
+		                            <th>Total Stock</th>
+		                            <th>Monthly Consumption</th>
+		                            <th>Months of Stock</th>
+		                            <th>Stock Status</th>
 		                        </tr>
 		                    </thead>
 		                    <tbody>
 		                        {% for product_stat in product_stats %}
-		                            <tr><td style="padding: 0.5em; border: 1px solid #000;">{{ product_stat.name }}</td>
-		                            <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.total_stock }}</td>
-		                            <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.consumption }}</td>
-		                            <td style="padding: 0.5em; border: 1px solid #000;""><strong>{{ product_stat.months_of_stock }}</strong></td>
+		                            <tr><td style="padding: 0.5em;">{{ product_stat.name }}</td>
+		                            <td style="padding: 0.5em; ">{{ product_stat.total_stock }}</td>
+		                            <td style="padding: 0.5em; ">{{ product_stat.consumption }}</td>
+		                            <td style="padding: 0.5em; "><strong>{{ product_stat.months_of_stock }}</strong></td>
 		                            <td style="{%ifequal product_stat.stock_status "Stockout" %}background-color: #ff9899; {% endifequal %}
 		                                       {%ifequal product_stat.stock_status "Low" %}background-color: #fff6cf;; {% endifequal %}
 		                                       {%ifequal product_stat.stock_status "Overstocked" %}background-color: #bf7ebe;; {% endifequal %}
 		                                       {%ifequal product_stat.stock_status "Adequate" %}background-color: #9acc99;; {% endifequal %}
-		                                       padding: 0.5em; border: 1px solid #000;""><strong>{{ product_stat.stock_status }}</strong></td>
+		                                       padding: 0.5em; "><strong>{{ product_stat.stock_status }}</strong></td>
 		                        {% endfor %}
 		                    </tbody>
 		                </table>
 			        </div>
 			    </div>
-			    <!-- 
-			    <div class="module toppadded" style="clear:both;">
-			        <a id="stock"></a>
-			        <table><tr><td>this is where the Medical Stores table will go</td></tr></table>
-			    </div>
-			     -->
+                {% block extra_content %}{% endblock %}
             </div>
         </div>
     </div>
