@@ -35,7 +35,6 @@ from logistics.models import ProductStock, \
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown, TotalStockByLocation
-from logistics.reports import get_reporting_and_nonreporting_facilities
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
