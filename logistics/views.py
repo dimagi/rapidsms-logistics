@@ -442,16 +442,16 @@ def get_facilities():
 def get_districts():
     return Location.objects.filter(type__slug=config.LocationCodes.DISTRICT)
 
+def get_regions():
+    return Location.objects.filter(type__slug=config.LocationCodes.REGION)
+
 @cache_page(60 * 15)
 @place_in_request()
 def district_dashboard(request, template="logistics/district_dashboard.html"):
-    districts = get_districts()
     if request.location is None:
-        # pick a random location to start
         location_code = settings.COUNTRY
         request.location = get_object_or_404(Location, code=location_code)
         facilities = SupplyPoint.objects.all()
-        #request.location = districts[0]
     else:
         facilities = request.location.all_child_facilities()
     report = ReportingBreakdown(facilities, 
@@ -461,7 +461,8 @@ def district_dashboard(request, template="logistics/district_dashboard.html"):
                               {"reporting_data": report,
                                "graph_width": 200,
                                "graph_height": 200,
-                               "districts": districts.order_by("code"),
+                               "regions": get_regions().order_by("code"),
+                               "districts": get_districts().order_by("code"),
                                "location": request.location},
                               context_instance=RequestContext(request))
 
