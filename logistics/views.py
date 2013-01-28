@@ -542,9 +542,7 @@ def summary(request, context=None):
     # This is needed by some of the alerts
     request.location = location
     facilities = location.all_child_facilities()
-    end = datetime.now()
-    start = end - timedelta(days=7)
-    datespan = DateSpan(start, end)
+    datespan = DateSpan.since(settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
     report = ReportingBreakdown(facilities, datespan, 
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
     products_by_location = TotalStockByLocation(facilities, datespan).products

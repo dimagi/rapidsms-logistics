@@ -18,10 +18,14 @@
                     <tbody>
                         <tr>
                             {% with report.reported|length as reported %}
-                            <td style="padding: 0.5em; border: 1px solid #000;">{% percent reported facility_count %} of facilities are reporting</td>
-                            {% endwith %}
+                            <td style="padding: 0.5em; border: 1px solid #000;">{% percent reported facility_count %} of facilities are reporting
+                                <span style="color:grey ; font-size:0.75em">({{reported}}/{{facility_count}})</span>
+                            </td>
                             {% with report.full|length as full %}
-                            <td style="padding: 0.5em; border: 1px solid #000;">{% percent full facility_count %} of facilities are submitting complete reports</td>
+                            <td style="padding: 0.5em; border: 1px solid #000;">{% percent full reported %} of submitted reports are complete
+                                <span style="color:grey ; font-size:0.75em">({{full}}/{{reported}})</span>
+                            </td>
+                            {% endwith %}
                             {% endwith %}
                         </tr>
                     </tbody>
