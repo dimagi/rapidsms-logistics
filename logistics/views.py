@@ -525,7 +525,7 @@ class MonthPager(object):
 
 
 @geography_context
-def summary(request, context=None):
+def summary(request, location_code=None, context=None):
     """
     View for generating HTML email reports via email-reports.
     While this can be viewed on the web, primarily this is rendered using a fake
