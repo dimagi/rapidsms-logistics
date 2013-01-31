@@ -162,3 +162,12 @@ class Location(models.Model, StockCacheMixin):
         self.code = new_code
         self.is_active = False
         self.save()
+
+    def deactivate(self):
+        self.is_active = False
+        self.save()
+
+    def activate(self):
+        self.is_active = True
+        self.save()
+
