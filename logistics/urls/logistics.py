@@ -55,4 +55,7 @@ urlpatterns = patterns('',
     url(r'^email-summary$',
         'logistics.views.summary',
         name="email-summary"),
+    url(r'^excel-export$',
+        'logistics.views.excel_export',
+        name="excel-export"),
 )

@@ -1,0 +1,82 @@
+{% extends "logistics/base.html" %}
+{% load i18n %}
+
+{% block javascripts %}{{ block.super }}
+<script language="javascript" type="text/javascript">
+    $(function() {
+	    $("[name=to_export]").change(function(){
+	        if ($(this).val() == "stock" || $(this).val() == "reporting" || $(this).val() == "reports" ) {
+	            $("#programs").slideDown("slow");
+	        } else {
+                $("#programs").slideUp("slow");
+	        }
+		    if ($(this).val() == "sms_messages") {
+                $("#people").slideDown("fast");
+            } else {
+                $("#people").slideUp("fast");
+            }
+	    });
+        $("[name=commoditytype]").change(function(){
+            $("[id^=program_]").slideUp("slow");
+            if ($(this).val() != "all") {
+                $("#program_" + $(this).val()).slideDown("slow");
+            }
+        });
+	});
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="module">
+        
+        <h2>Excel Export</h2>
+	    <form action="" method="post">{% csrf_token %}
+	        <!-- TODO: add logistics/partials/breadcrumbs.html later -->
+            Dates: {% include "logistics/partials/date_selector.html" %}<br/>
+            <fieldset>
+	            <label>What do you want to export?</label><br/>
+				<input type="radio" name="to_export" value="stock"> Periodic Stock Summary<br>
+				<input type="radio" name="to_export" value="reporting"> Periodic Reporting Summary<br/>
+	            <input type="radio" name="to_export" value="reports"> All Product Reports<br/>
+                <input type="radio" name="to_export" value="sms_messages"> SMS Messages<br/>
+                <input type="radio" name="to_export" value="other"> Web User Activity<br/>
+	            {% for field in fields %}
+	            <input type="radio" name="to_export" value="{{field.id}}"> {{field.name}}<br/>
+	            {% endfor %}
+            </fieldset>
+            
+	        <div type="hidden" id="programs">
+                <fieldset>
+                <input class="product_list" type="radio" name="commoditytype" value="all" checked>
+                    {% trans "All" %}<br>
+			    {% for commoditytype in commoditytypes %}
+			    <input class="product_list" type="radio" name="commoditytype" value="{{ commoditytype.code }}">
+			        {{ commoditytype.name }}<br/>
+			    {% endfor %}</fieldset></div>
+			
+            {% for program_code, commodities in commodities_by_program %}
+            <div class="hidden" id="program_{{program_code}}">
+                <fieldset><input class="product_list" type="radio" name="{{program_code}}_commodity" value="all" checked>
+                    {% trans "All" %}<br>
+                {% for commodity in commodities %}
+                <input class="product_list" type="radio" name="{{program_code}}_commodity" value="{{ commodity.sms_code }}">
+                    {{ commodity.name }}<br>
+                {% endfor %}</fieldset></div>
+            {% endfor %}
+
+            <div class="hidden" id="people"><fieldset>
+		        <label for="contact">Contact: </label>
+		        <select name="contact" id="contact">
+		        <option value="">All</option>
+		        {% for c in contacts %}
+		            <option value="{{ c.pk }}">{{ c.name }} ({{c.default_connection.identity}})</option>
+		        {% endfor %}
+		        </select>
+            </div>
+
+	        <div class="submit">
+	            <input type="submit" name="submit" value="Export" />
+	        </div>
+	    </form>
+    </div>
+{% endblock %}

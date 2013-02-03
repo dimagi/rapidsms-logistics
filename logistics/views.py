@@ -22,6 +22,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 from rapidsms.conf import settings
+from rapidsms.models import Contact
 from rapidsms.contrib.locations.models import Location
 from rapidsms.contrib.messagelog.views import MessageLogView as RapidSMSMessagLogView
 from dimagi.utils.dates import DateSpan
@@ -31,9 +32,11 @@ from logistics.charts import stocklevel_plot
 from logistics.decorators import place_in_request
 from logistics.models import ProductStock, \
     ProductReportsHelper, ProductReport, LogisticsProfile,\
-    SupplyPoint, StockTransaction, RequisitionReport
+    SupplyPoint, StockTransaction, RequisitionReport, \
+    ProductType
 from logistics.util import config
-from logistics.view_decorators import filter_context, geography_context
+from logistics.view_decorators import filter_context, geography_context, \
+    location_context
 from logistics.reports import ReportingBreakdown, TotalStockByLocation
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
@@ -570,3 +573,17 @@ def summary(request, location_code=None, context=None):
         'product_stats': products_by_location,
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
+
+@filter_context
+@location_context
+@datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS)
+def excel_export(request, context={}, template="logistics/excel_export.html"):
+    context["contacts"] = Contact.objects.all().order_by("name")
+    commodities_by_program = []
+    for program in ProductType.objects.all():
+        commodities_by_program.append((program.code, Product.objects.filter(type=program).order_by('name')))
+    context["commodities_by_program"] = commodities_by_program
+    return render_to_response(
+        template, context, context_instance=RequestContext(request)
+    )
+

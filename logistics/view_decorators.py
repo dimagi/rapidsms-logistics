@@ -47,7 +47,8 @@ def filter_context(func):
 
 def geography_context(func):
     """
-    add geography to context
+    add geography to context - only used by the accordion nav
+    to provide location context within its geography
     """
     def _new_func(*args, **kwargs):
         context = {}
