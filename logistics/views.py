@@ -12,7 +12,8 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponse, Http404
+from django.http import HttpResponse, HttpResponseRedirect, \
+    HttpResponse, Http404, HttpResponseBadRequest
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
@@ -22,6 +23,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 from rapidsms.conf import settings
+from rapidsms.contrib.messagelog.models import Message
 from rapidsms.models import Contact
 from rapidsms.contrib.locations.models import Location
 from rapidsms.contrib.messagelog.views import MessageLogView as RapidSMSMessagLogView
@@ -45,7 +47,7 @@ from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
 from alerts.models import Notification
-
+from logistics.view_util import get_func
 
 def no_ie_allowed(request, template="logistics/no_ie_allowed.html"):
     return render_to_response(template, context_instance=RequestContext(request))
@@ -315,14 +317,23 @@ def get_location_children(location, commodity_filter, commoditytype_filter, date
 
 @cache_page(60 * 15)
 @place_in_request()
-def export_reporting(request):
+def export_reporting(request, program=None, commodity=None):
     if request.location is None:
         request.location = get_object_or_404(Location, code=settings.COUNTRY)
     queryset = ProductReport.objects.filter(supply_point__location__in=\
                                             request.location.get_descendants(include_self=True))\
+    queryset = ProductReport.objects.filter(supply_point__location__in=location.get_descendants(include_self=True))\
       .select_related("supply_point__name", "supply_point__location__parent__name", 
                       "supply_point__location__parent__parent__name", 
-                      "product__name", "report_type__name", "message__text").order_by('report_date')
+                      "product__name", "report_type__name", "message__text")
+    if request.datespan: 
+        queryset = ProductReport.objects.filter(report_date__gte=request.datespan.computed_startdate)\
+                                        .filter(report_date__lte=request.datespan.computed_enddate)
+    if program and program != 'all':
+        queryset = ProductReport.objects.filter(product__type__code=program)
+    if commodity and commodity != 'all': 
+        queryset = ProductReport.objects.filter(product__sms_code=commodity)
+    queryset = queryset.order_by('report_date')
     response = HttpResponse(mimetype=mimetype_map.get(format, 'application/octet-stream'))
     response['Content-Disposition'] = 'attachment; filename=reporting.xls'
     writer = csv.UnicodeWriter(response)
@@ -574,10 +585,128 @@ def summary(request, location_code=None, context=None):
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
 
+@cache_page(60 * 15)
+def export_messagelog(request, contact=None, format='xls'):
+    class MessageDataSet(ModelDataset):
+        class Meta:
+            def _get_mds_queryset():
+                messages = Message.objects.order_by('-date')[:30]
+                if contact:
+                    messages = messages.filter(contact__pk=contact)
+                if request.location: 
+                    messages = messages.filter(contact__supply_point__location__pk__in=\
+                                               [l.pk for l in request.location.get_descendants_plus_self()]).distinct()
+                if request.datespan:
+                    messages = messages.filter(date__gte=request.datespan.computed_startdate)\
+                                       .filter(date__lte=request.datespan.computed_enddate)
+                return messages
+            queryset = _get_mds_queryset()
+    response = HttpResponse(
+        getattr(MessageDataSet(), format),
+        mimetype=mimetype_map.get(format, 'application/octet-stream')
+        )
+    response['Content-Disposition'] = 'attachment; filename=messagelog.xls'
+    return response
+
+def _get_day_of_week(self, date, day_of_week):
+    weekday_delta = day_of_week - date.weekday()
+    return date + timedelta(days=weekday_delta)            
+
+@cache_page(60 * 15)
+def export_periodic_reporting(request):
+    """ TODO: pipe this somewhere other than tmp once you have a sense 
+    of how to pipe it into django-soil"""
+    filename = 'periodic_reporting.xls'
+    if not request.location:
+        return HttpResponseBadRequest("location not supplied in request")
+    locations = [pk for pk in request.location.get_descendants_plus_self()]
+    base_points = SupplyPoint.objects.filter(location__in=locations, active=True)
+    if base_points.count() == 0:
+        return
+    with open('/tmp/%s' % filename, 'w') as f:
+        f.write(", ".join(["start of period", "end of period", "total num facilities", "# reporting", "# on time", "# late"]))
+        f.write('\n')
+        end_date = _get_day_of_week(datetime.now(), 3)
+        for i in range(1,50):
+            start_date = end_date - timedelta(days=7)
+            datespan = DateSpan(start_date, end_date)
+            report = ReportingBreakdown(base_points, datespan,  
+                                        include_late=True, days_for_late=5)
+            late = report.reported_late.count()
+            on_time = report.reported_on_time.count()
+            total = base_points.count()
+            f.write("%s, %s, %s, %s, %s, %s\n" % (start_date, end_date, total, 
+                                                  report.reported.count(), 
+                                                  on_time, late))
+            end_date = start_date
+    
+@cache_page(60 * 15)
+def export_periodic_stock(request, program=None, commodity=None):
+    """ TODO: come back and fix this once you have a better sense 
+    of how to pipe it into django-soil"""
+    filename = 'periodic_stock.xls'
+    locations = request.location.get_descendants_plus_self()
+    with open('/tmp/%s' % filename, 'w') as f:
+        f.write(", ".join(["start of period", "end of period", "total facilities", 
+                           "stock out", "low stock", "adequate stock", "overstock"]))
+        f.write('\n')
+        end_date = self.get_day_of_week(datetime.now(), 3)
+        for i in range(1,50):
+            start_date = end_date - timedelta(days=7)
+            #print "processing date %s" % start_date
+            datespan = DateSpan(start_date, end_date)
+            
+            stockout = low = adequate = overstock = total = 0
+            safe_add = lambda x, y: x + y if y is not None else x
+            if commodity:
+                commodities = Product.objects.filter(is_active=True).filter(sms_code=commodity)
+            elif program:
+                commodities = Product.objects.filter(is_active=True).filter(type__code=program)
+            else:
+                commodities = Product.objects.filter(is_active=True)
+            for commodity in commodities:
+                total = 0
+                for location in locations:
+                    #print "processing commodity %s in region %s" % (commodity, region)
+                    stockout = safe_add(stockout, 
+                                        region.stockout_count(product=commodity, datespan=datespan))
+                    low = safe_add(low, 
+                                        region.emergency_plus_low(product=commodity, datespan=datespan))
+                    adequate = safe_add(adequate, 
+                                        region.good_supply_count(product=commodity, datespan=datespan))
+                    overstock = safe_add(overstock, 
+                                        region.overstocked_count(product=commodity, datespan=datespan))
+                    total = stockout+low+adequate+overstock+safe_add(total, 
+                            region.other_count(product=commodity, datespan=datespan))
+            f.write("%s, %s, %s, %s, %s, %s, %s\n" % (start_date, end_date, total, 
+                                                  stockout, low, adequate, overstock))
+            end_date = start_date 
+
+@place_in_request()
 @filter_context
 @location_context
 @datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS)
 def excel_export(request, context={}, template="logistics/excel_export.html"):
+    """ a dedicated excel export page, for slicing and dicing exports as needed
+    This page also allows different deployments to define additional export fields """
+    custom_exports = getattr(settings, "CUSTOM_EXPORTS", None)
+    if request.method == "POST":
+        program = commodity = contact = None
+        program = request.POST.get('commoditytype', None)
+        commodity = request.POST.get('commodity', None)
+        if request.POST["to_export"] == 'stock':
+            return export_periodic_stock(request, program, commodity)
+        if request.POST["to_export"] == 'reports':
+            return export_reporting(request, location_code=None, program=program, commodity=commodity)
+        if request.POST["to_export"] == 'reporting':
+            return export_periodic_reporting(request)
+        if request.POST["to_export"] == 'sms_messages':
+            contact = request.POST.get('contact', None)
+            return export_messagelog(request, contact)
+        for name, func in custom_exports:
+            if request.POST["to_export"] == name:
+                return get_func(func)(request)
+    context["custom_exports"] = custom_exports
     context["contacts"] = Contact.objects.all().order_by("name")
     commodities_by_program = []
     for program in ProductType.objects.all():
@@ -586,4 +715,3 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
-

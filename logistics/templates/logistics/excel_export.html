@@ -5,10 +5,11 @@
 <script language="javascript" type="text/javascript">
     $(function() {
 	    $("[name=to_export]").change(function(){
-	        if ($(this).val() == "stock" || $(this).val() == "reporting" || $(this).val() == "reports" ) {
+	        if ($(this).val() == "stock" || $(this).val() == "reports" ) {
 	            $("#programs").slideDown("slow");
 	        } else {
                 $("#programs").slideUp("slow");
+                $("[id^=program_]").slideUp("slow");
 	        }
 		    if ($(this).val() == "sms_messages") {
                 $("#people").slideDown("fast");
@@ -22,6 +23,12 @@
                 $("#program_" + $(this).val()).slideDown("slow");
             }
         });
+        $("#exportform").submit(function() {
+            if ($("[name=to_export]:checked").length == 0){
+                alert("Please indicate what you would like to export.");
+                return false;
+            }
+         });
 	});
 </script>
 {% endblock %}
@@ -30,22 +37,21 @@
     <div class="module">
         
         <h2>Excel Export</h2>
-	    <form action="" method="post">{% csrf_token %}
+	    <form action="" method="post" id="exportform">{% csrf_token %}
 	        <!-- TODO: add logistics/partials/breadcrumbs.html later -->
             Dates: {% include "logistics/partials/date_selector.html" %}<br/>
             <fieldset>
-	            <label>What do you want to export?</label><br/>
+	            <label>What data do you want to export?</label><br/>
 				<input type="radio" name="to_export" value="stock"> Periodic Stock Summary<br>
+                <input type="radio" name="to_export" value="reports"> All Product Reports<br/>
 				<input type="radio" name="to_export" value="reporting"> Periodic Reporting Summary<br/>
-	            <input type="radio" name="to_export" value="reports"> All Product Reports<br/>
                 <input type="radio" name="to_export" value="sms_messages"> SMS Messages<br/>
-                <input type="radio" name="to_export" value="other"> Web User Activity<br/>
-	            {% for field in fields %}
-	            <input type="radio" name="to_export" value="{{field.id}}"> {{field.name}}<br/>
+	            {% for name, func in custom_exports %}
+	               <input type="radio" name="to_export" value="{{name}}"> {{name}}<br/>
 	            {% endfor %}
             </fieldset>
             
-	        <div type="hidden" id="programs">
+	        <div class="hidden" id="programs">
                 <fieldset>
                 <input class="product_list" type="radio" name="commoditytype" value="all" checked>
                     {% trans "All" %}<br>
@@ -56,14 +62,14 @@
 			
             {% for program_code, commodities in commodities_by_program %}
             <div class="hidden" id="program_{{program_code}}">
-                <fieldset><input class="product_list" type="radio" name="{{program_code}}_commodity" value="all" checked>
+                <fieldset><input class="product_list" type="radio" name="commodity" value="all" checked>
                     {% trans "All" %}<br>
                 {% for commodity in commodities %}
-                <input class="product_list" type="radio" name="{{program_code}}_commodity" value="{{ commodity.sms_code }}">
+                <input class="product_list" type="radio" name="commodity" value="{{ commodity.sms_code }}">
                     {{ commodity.name }}<br>
                 {% endfor %}</fieldset></div>
             {% endfor %}
-
+            
             <div class="hidden" id="people"><fieldset>
 		        <label for="contact">Contact: </label>
 		        <select name="contact" id="contact">
