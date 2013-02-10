@@ -27,7 +27,6 @@ REQUIRES:
 <div id="topnav" class="noprint">
 <form style="border-style:none;" id="location_form" method="POST" action="{% url navigate %}">
 	{% csrf_token %}
-	{% render_bread_nav location %}
 	<input type="hidden" name="destination_url" id="destination_url" value="{{ destination_url }}" />
     <input type="hidden" name="year" id="year" value="{{ month_pager.year }}" />
     <input type="hidden" name="month" id="month" value="{{ month_pager.month }}" />
