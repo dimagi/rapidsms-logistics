@@ -64,7 +64,9 @@ def landing_page(request):
     if prof and prof.supply_point:
         return stockonhand_facility(request, prof.supply_point.code)
     elif prof and prof.location:
-        return aggregate(request, prof.location.code)
+        # always default to the user's specified home location
+        request.location = prof.location
+        return aggregate(request)
     return dashboard(request)
 
 def input_stock(request, facility_code, context={}, template="logistics/input_stock.html"):
@@ -155,12 +157,15 @@ def stockonhand_facility(request, facility_code, context={}, template="logistics
 @cache_page(60 * 15)
 @geography_context
 @filter_context
-def facilities_by_product(request, location_code, context={}, template="logistics/by_product.html"):
+@place_in_request()
+def facilities_by_product(request, context={}, template="logistics/by_product.html"):
     """
     The district view is unusual. When we do not receive a filter by individual product,
     we show the aggregate report. When we do receive a filter by individual product, we show
     the 'by product' report. Let's see how this goes. 
     """
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
     if 'commodity' in request.REQUEST:
         commodity_filter = request.REQUEST['commodity']
         context['commodity_filter'] = commodity_filter
@@ -168,10 +173,10 @@ def facilities_by_product(request, location_code, context={}, template="logistic
         context['selected_commodity'] = commodity
     else:
         raise HttpResponse('Must specify "commodity"')
-    location = get_object_or_404(Location, code=location_code)
-    stockonhands = ProductStock.objects.filter(Q(supply_point__location__in=location.get_descendants(include_self=True)))
+    stockonhands = ProductStock.objects.filter(Q(supply_point__location__in=\
+                                                 request.location.get_descendants(include_self=True)))
     context['stockonhands'] = stockonhands.filter(product=commodity).order_by('supply_point__name')
-    context['location'] = location
+    context['location'] = request.location
     context['hide_product_link'] = True
     context['destination_url'] = "aggregate"
     return render_to_response(
@@ -183,16 +188,16 @@ def facilities_by_product(request, location_code, context={}, template="logistic
 @geography_context
 @filter_context
 @magic_token_required()
+@place_in_request()
 @datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS)
-def reporting(request, location_code=None, context={}, template="logistics/reporting.html", 
+def reporting(request, context={}, template="logistics/reporting.html", 
               destination_url="reporting"):
     """ which facilities have reported on time and which haven't """
-    if location_code is None:
-        location_code = settings.COUNTRY
-    if location_code == settings.COUNTRY:
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
+    if request.location.code == settings.COUNTRY:
         context['excel_export'] = False
-    location = get_object_or_404(Location, code=location_code)
-    context['location'] = location
+    context['location'] = request.location
     context['destination_url'] = destination_url
     return render_to_response(
         template, context, context_instance=RequestContext(request)
@@ -231,16 +236,16 @@ def navigate(request):
 @csrf_exempt
 @geography_context
 @filter_context
-def dashboard(request, location_code=None, context={}, template="logistics/aggregate.html"):
-    if location_code is None:
-        location_code = settings.COUNTRY
-    location = get_object_or_404(Location, code=location_code)
+@place_in_request()
+def dashboard(request, context={}, template="logistics/aggregate.html"):
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
     # if the location has no children, and 1 supply point treat it like
     # a stock on hand request. Otherwise treat it like an aggregate.
-    if location.get_children().count() == 0 and location.facilities().count() == 1:
-        facility = location.facilities()[0]
+    if request.location.get_children().count() == 0 and request.location.facilities().count() == 1:
+        facility = request.location.facilities()[0]
         return stockonhand_facility(request, facility.code, context=context)
-    return aggregate(request, location_code, context=context)
+    return aggregate(request, context=context)
 
 @csrf_exempt
 @cache_page(60 * 15)
@@ -248,20 +253,20 @@ def dashboard(request, location_code=None, context={}, template="logistics/aggre
 @filter_context
 @magic_token_required()
 @datespan_in_request()
-def aggregate(request, location_code=None, context={}, template="logistics/aggregate.html"):
+@place_in_request()
+def aggregate(request, context={}, template="logistics/aggregate.html"):
     """
     The aggregate view of all children within a geographical region
     where 'children' can either be sub-regions
     OR facilities if no sub-region exists
     """
     # default to the whole country
-    if location_code is None:
-        location_code = settings.COUNTRY
-    location = get_object_or_404(Location, code=location_code)
-    context['location'] = location
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
     context['default_commodity'] = Product.objects.order_by('name')[0]
-    context['facility_count'] = location.child_facilities().count()
+    context['facility_count'] = request.location.child_facilities().count()
     context['destination_url'] = 'aggregate'
+    context['location'] = request.location
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
@@ -277,7 +282,7 @@ def _get_rows_from_children(children, commodity_filter, commoditytype_filter, da
         if isinstance(child, SupplyPoint):
             row['url'] = reverse('stockonhand_facility', args=[child.code])
         else:
-            row['url'] = reverse('logistics_dashboard', args=[child.code])
+            row['url'] = "%s?place=%s" % (reverse('logistics_dashboard'), child.code)
         row['stockout_count'] = child.stockout_count(product=commodity_filter, 
                                                      producttype=commoditytype_filter, 
                                                      datespan=datespan)
@@ -306,11 +311,12 @@ def get_location_children(location, commodity_filter, commoditytype_filter, date
     return _get_rows_from_children(children, commodity_filter, commoditytype_filter, datespan)
 
 @cache_page(60 * 15)
-def export_reporting(request, location_code=None):
-    if location_code is None:
-        location_code = settings.COUNTRY
-    location = get_object_or_404(Location, code=location_code)
-    queryset = ProductReport.objects.filter(supply_point__location__in=location.get_descendants(include_self=True))\
+@place_in_request()
+def export_reporting(request):
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
+    queryset = ProductReport.objects.filter(supply_point__location__in=\
+                                            request.location.get_descendants(include_self=True))\
       .select_related("supply_point__name", "supply_point__location__parent__name", 
                       "supply_point__location__parent__parent__name", 
                       "product__name", "report_type__name", "message__text").order_by('report_date')
@@ -448,22 +454,32 @@ def get_regions():
 @cache_page(60 * 15)
 @place_in_request()
 def district_dashboard(request, template="logistics/district_dashboard.html"):
+    context = {}
+    location = request.location
     if request.location is None:
-        location_code = settings.COUNTRY
-        request.location = get_object_or_404(Location, code=location_code)
+        location = request.location = get_object_or_404(Location, code=settings.COUNTRY)
         facilities = SupplyPoint.objects.all()
     else:
-        facilities = request.location.all_child_facilities()
+        if request.location.get_children().count() <= 1:
+            # since this is a dashboard, it doesn't really make sense
+            # to drill down to individual facilities
+            context['nav_hide_children'] = True
+        if request.location.get_children().count() == 0:
+            # if there's no children to aggregate, show peer info
+            if request.location.tree_parent:
+                location = request.location.tree_parent
+        facilities = location.all_child_facilities()
     report = ReportingBreakdown(facilities, 
                                 DateSpan.since(settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT), 
                                 days_for_late = settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
-    return render_to_response(template,
-                              {"reporting_data": report,
-                               "graph_width": 200,
-                               "graph_height": 200,
-                               "regions": get_regions().order_by("code"),
-                               "districts": get_districts().order_by("code"),
-                               "location": request.location},
+    context["reporting_data"] = report
+    context["graph_width"] = 200
+    context["graph_height"] = 200
+    context["regions"] = get_regions().order_by("code")
+    context["districts"] = get_districts().order_by("code")
+    context["location"] = location
+    context["destination_url"] = "district_dashboard"
+    return render_to_response(template, context, 
                               context_instance=RequestContext(request))
 
 class LogisticsMessageLogView(RapidSMSMessagLogView):

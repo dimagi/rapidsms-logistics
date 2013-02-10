@@ -28,8 +28,8 @@
     <input class="product_list" type="radio" name="commodity" value="{{ commodity.sms_code }}"
         {% ifequal commodity_filter commodity.sms_code %}checked{% endifequal %}
     >{{ commodity.name }} 
-    {% if location and facility_count > 0 %}
-        <a href="{% url by_product location.code %}?commodity={{commodity.sms_code}}">
+    {% if request.location and facility_count > 0 %}
+        <a href="{% url by_product %}?commodity={{commodity.sms_code}}">
             <img src="{{ MEDIA_URL }}logistics/images/magnifier.png"></img>
         </a>
     {% endif %}

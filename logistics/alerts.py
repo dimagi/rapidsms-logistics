@@ -19,8 +19,10 @@ class NonReportingFacilityAlert(Alert):
 
 @place_in_request_with_context()
 def non_reporting_facilities(context, request):
+    # context['location'] can be used to override request.location
+    location = context['location'] if 'location' in context else request.location
     on_time, late = get_reporting_and_nonreporting_facilities(datetime.utcnow() - timedelta(days=32), 
-                                                              location=request.location)
+                                                              location=location)
     if not late:
         return None
     return [NonReportingFacilityAlert(facility) for facility in late]
@@ -39,7 +41,8 @@ class FacilitiesWithoutRemindersAlert(Alert):
 @place_in_request_with_context()
 @return_if_place_not_set_with_context()
 def facilities_without_reminders(context, request):
-    facilities = request.location.all_child_facilities()
+    location = context['location'] if 'location' in context else request.location
+    facilities = location.all_child_facilities()
     if not facilities:
         return None
     return [FacilitiesWithoutRemindersAlert(facility) for facility in facilities \
@@ -59,7 +62,8 @@ class FacilitiesWithoutReportersAlert(Alert):
 @place_in_request_with_context()
 @return_if_place_not_set_with_context()
 def facilities_without_reporters(context, request):
-    facilities = request.location.all_child_facilities()
+    location = context['location'] if 'location' in context else request.location
+    facilities = location.all_child_facilities()
     if not facilities:
         return None
     return [FacilitiesWithoutReportersAlert(facility) for facility in facilities \

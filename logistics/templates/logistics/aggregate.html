@@ -12,7 +12,7 @@
         {% include "logistics/partials/breadcrumbs.html" %}
         {% include "logistics/partials/date_selector_form.html" %}
         <div id="main">
-            <h2 id="report-title"> {{ location.name }} {% trans "Aggregate Stock Report" %}
+            <h2 id="report-title"> {{ request.location.name }} {% trans "Aggregate Stock Report" %}
             
             {% if commodity_filter %}
 	            >> {% commodity_code_to_name commodity_filter%}
@@ -24,7 +24,7 @@
                 {% include "logistics/partials/commodity_filter.html" %}
             </div>
             <div id="report-content">
-                {% aggregate_table location commodity_filter commoditytype_filter request.datespan %}
+                {% aggregate_table request.location commodity_filter commoditytype_filter request.datespan %}
             </div>
         </div>
     </div>
