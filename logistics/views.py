@@ -2,10 +2,8 @@
 # vim: ai ts=4 sts=4 et sw=4 encoding=utf-8
 from __future__ import absolute_import
 
-from logistics.const import Reports
-
-from dimagi.utils import csv 
 import json
+import uuid
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from django.core.urlresolvers import reverse
@@ -13,7 +11,7 @@ from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect, \
-    HttpResponse, Http404, HttpResponseBadRequest
+    HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
@@ -27,18 +25,19 @@ from rapidsms.contrib.messagelog.models import Message
 from rapidsms.models import Contact
 from rapidsms.contrib.locations.models import Location
 from rapidsms.contrib.messagelog.views import MessageLogView as RapidSMSMessagLogView
+from dimagi.utils import csv 
 from dimagi.utils.dates import DateSpan
 from dimagi.utils.decorators.datespan import datespan_in_request
 from email_reports.decorators import magic_token_required
 from logistics.charts import stocklevel_plot
+from logistics.const import Reports
 from logistics.decorators import place_in_request
 from logistics.models import ProductStock, \
     ProductReportsHelper, ProductReport, LogisticsProfile,\
     SupplyPoint, StockTransaction, RequisitionReport, \
     ProductType
 from logistics.util import config
-from logistics.view_decorators import filter_context, geography_context, \
-    location_context
+from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown, TotalStockByLocation
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
@@ -46,7 +45,6 @@ from rapidsms.contrib.messagelog.models import Message
 from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
-from alerts.models import Notification
 from logistics.view_util import get_func
 
 def no_ie_allowed(request, template="logistics/no_ie_allowed.html"):
@@ -322,7 +320,6 @@ def export_reporting(request, program=None, commodity=None):
         request.location = get_object_or_404(Location, code=settings.COUNTRY)
     queryset = ProductReport.objects.filter(supply_point__location__in=\
                                             request.location.get_descendants(include_self=True))\
-    queryset = ProductReport.objects.filter(supply_point__location__in=location.get_descendants(include_self=True))\
       .select_related("supply_point__name", "supply_point__location__parent__name", 
                       "supply_point__location__parent__parent__name", 
                       "product__name", "report_type__name", "message__text")
@@ -684,11 +681,11 @@ def export_periodic_stock(request, program=None, commodity=None):
 
 @place_in_request()
 @filter_context
-@location_context
 @datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS)
 def excel_export(request, context={}, template="logistics/excel_export.html"):
     """ a dedicated excel export page, for slicing and dicing exports as needed
     This page also allows different deployments to define additional export fields """
+    context['download_id'] = uuid.uuid4().hex
     custom_exports = getattr(settings, "CUSTOM_EXPORTS", None)
     if request.method == "POST":
         program = commodity = contact = None
@@ -697,7 +694,7 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
         if request.POST["to_export"] == 'stock':
             return export_periodic_stock(request, program, commodity)
         if request.POST["to_export"] == 'reports':
-            return export_reporting(request, location_code=None, program=program, commodity=commodity)
+            return export_reporting(request, program=program, commodity=commodity)
         if request.POST["to_export"] == 'reporting':
             return export_periodic_reporting(request)
         if request.POST["to_export"] == 'sms_messages':
@@ -705,7 +702,7 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
             return export_messagelog(request, contact)
         for name, func in custom_exports:
             if request.POST["to_export"] == name:
-                return get_func(func)(request)
+                get_func(func)(context['download_id'])
     context["custom_exports"] = custom_exports
     context["contacts"] = Contact.objects.all().order_by("name")
     commodities_by_program = []

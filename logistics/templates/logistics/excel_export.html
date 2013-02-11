@@ -4,6 +4,7 @@
 {% block javascripts %}{{ block.super }}
 <script language="javascript" type="text/javascript">
     $(function() {
+        // display filters as appropritae
 	    $("[name=to_export]").change(function(){
 	        if ($(this).val() == "stock" || $(this).val() == "reports" ) {
 	            $("#programs").slideDown("slow");
@@ -23,12 +24,29 @@
                 $("#program_" + $(this).val()).slideDown("slow");
             }
         });
+        // validate form submission
         $("#exportform").submit(function() {
             if ($("[name=to_export]:checked").length == 0){
                 alert("Please indicate what you would like to export.");
                 return false;
             }
+            $("#export_start").show("fast");
          });
+        // use ajax to poll for the finished download
+		var autoRefresh = '';
+		var pollDownloader = function () {
+		    if ($('#ready_{{ download_id }}').length == 0)
+		    {
+		        $.get("{% url ajax_job_poll download_id %}", function(data) {
+		            $("#display_{{ download_id }}").html(data);
+		        });
+		    } else {
+		        clearInterval(autoRefresh);
+		    }
+		};
+		$(document).ready(function () {
+		    autoRefresh = setInterval(pollDownloader, 2000);
+		});
 	});
 </script>
 {% endblock %}
@@ -84,5 +102,14 @@
 	            <input type="submit" name="submit" value="Export" />
 	        </div>
 	    </form>
+	    
+    </div>
+    <div class="module">
+	    <div class="hidden" id="export_start">
+	        <img src="{{ MEDIA_URL }}soil/img/ajax-loader.gif"/>
+	        Preparing download. This may take some time...
+	    </div>
+	    <div id="display_{{ download_id }}">
+	    </div>
     </div>
 {% endblock %}
