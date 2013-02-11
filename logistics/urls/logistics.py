@@ -58,4 +58,7 @@ urlpatterns = patterns('',
     url(r'^excel-export$',
         'logistics.views.excel_export',
         name="excel-export"),
+    url(r'^ajax/contact_dropdown$',
+        'logistics.views.ajax_contact_dropdown',
+        name="ajax_contact_dropdown"),
 )

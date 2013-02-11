@@ -13,9 +13,9 @@
                 $("[id^=program_]").slideUp("slow");
             }
             if ($(this).val() == "sms_messages") {
-                $("#people").slideDown("fast");
+                $("#people").show();
             } else {
-                $("#people").slideUp("fast");
+                $("#people").hide();
             }
         });
         $("[name=commoditytype]").change(function(){
@@ -46,6 +46,9 @@
         };
         $(document).ready(function () {
             autoRefresh = setInterval(pollDownloader, 2000);
+        });
+        $.get("{% url ajax_contact_dropdown %}", function(data) {
+            $("#people").html(data);
         });
     });
 </script>
@@ -88,15 +91,8 @@
                 {% endfor %}</fieldset></div>
             {% endfor %}
             
-            <div class="hidden" id="people"><fieldset>
-                <label for="contact">Contact: </label>
-                <select name="contact" id="contact">
-                <option value="">All</option>
-                {% for c in contacts %}
-                    <option value="{{ c.pk }}">{{ c.name }} ({{c.default_connection.identity}})</option>
-                {% endfor %}
-                </select>
-            </div>
+            <!-- This is populated dynamically above since it's a bit slow to load -->
+            <div class="hidden" id="people"></div>
 
             <div class="submit">
                 <input type="submit" name="submit" value="Export" />

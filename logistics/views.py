@@ -704,11 +704,17 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
             if request.POST["to_export"] == name:
                 get_func(func)(context['download_id'])
     context["custom_exports"] = custom_exports
-    context["contacts"] = Contact.objects.all().order_by("name")
     commodities_by_program = []
     for program in ProductType.objects.all():
         commodities_by_program.append((program.code, Product.objects.filter(type=program).order_by('name')))
     context["commodities_by_program"] = commodities_by_program
+    return render_to_response(
+        template, context, context_instance=RequestContext(request)
+    )
+
+def ajax_contact_dropdown(request, template="logistics/partials/contact_dropdown.html"):
+    context = {}
+    context["contacts"] = Contact.objects.all().order_by("name")
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
