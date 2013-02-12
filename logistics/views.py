@@ -602,13 +602,13 @@ def _excel_response(path, filename):
     return response
 
 @place_in_request()
-@datespan_in_request(default_days=30)
+@datespan_in_request(default_days=365)
 def export_reporting(request):
     fd, path = create_export_reporting_file(request)
     return _excel_response(path, "export_reporting.xls")
 
 @place_in_request()
-@datespan_in_request(default_days=30)
+@datespan_in_request(default_days=365)
 def export_periodic_stock(request):
     fd, path = create_export_periodic_stock(request)
     return _excel_response(path, "export_periodic_stock.xls")
