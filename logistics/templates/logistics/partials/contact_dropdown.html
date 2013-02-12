@@ -1,0 +1,7 @@
+<label for="contact">Contact: </label>
+<select name="contact" id="contact">
+<option value="">All</option>
+{% for c in contacts %}
+    <option value="{{ c.pk }}">{{ c.name }} ({{c.default_connection.identity}})</option>
+{% endfor %}
+</select>

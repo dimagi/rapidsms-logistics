@@ -121,7 +121,8 @@ def _put_place_in_request(request, param):
     if code:
         request.location = Location.objects.get(code=code)
     else:
-        request.location = None
+        # default to country
+        request.location = Location.objects.get(code=settings.COUNTRY)
     request.select_location = True # used in the templates
     if request.location and not request.from_url and request.method=="GET":
         params = {param: request.location.code}

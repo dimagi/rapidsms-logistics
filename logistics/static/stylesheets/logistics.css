@@ -36,6 +36,10 @@ textarea, select {
 	padding: 0.5em;
 }
 
+.hidden {
+	display: none;
+}
+
 .right {
     float: right;
     display: inline;
@@ -104,4 +108,11 @@ textarea, select {
 .required_label:after {
 	color: red;  
 	content: "*"; 
+}
+
+.alert-success { 
+	border: 2px solid #ddd;
+    background: #e6efc2; 
+    color: #264409; 
+    border-color: #c6d880; 
 }

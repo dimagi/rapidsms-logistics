@@ -1,0 +1,111 @@
+{% extends "logistics/base.html" %}
+{% load i18n %}
+
+{% block javascripts %}{{ block.super }}
+<script language="javascript" type="text/javascript">
+    $(function() {
+        // display filters as appropritae
+        $("[name=to_export]").change(function(){
+            if ($(this).val() == "stock" || $(this).val() == "reports" ) {
+                $("#programs").slideDown("slow");
+            } else {
+                $("#programs").slideUp("slow");
+                $("[id^=program_]").slideUp("slow");
+            }
+            if ($(this).val() == "sms_messages") {
+                $("#people").show();
+            } else {
+                $("#people").hide();
+            }
+        });
+        $("[name=commoditytype]").change(function(){
+            $("[id^=program_]").slideUp("slow");
+            if ($(this).val() != "all") {
+                $("#program_" + $(this).val()).slideDown("slow");
+            }
+        });
+        // validate form submission
+        $("#exportform").submit(function() {
+            if ($("[name=to_export]:checked").length == 0){
+                alert("Please indicate what you would like to export.");
+                return false;
+            }
+            $("[id^=display_]").hide();
+            $("#export_start").show("fast");
+         });
+        // use ajax to poll for the finished download
+        var autoRefresh = '';
+        var pollDownloader = function () {
+            if ($('#ready_{{ download_id }}').length == 0)
+            {
+                $.get("{% url ajax_job_poll download_id %}", function(data) {
+                    $("#display_{{ download_id }}").html(data);
+                });
+            } else {
+                $("#export_start").slideUp("slow");
+                clearInterval(autoRefresh);
+            }
+        };
+        if ($("people").length <= 1){        
+	        $.get("{% url ajax_contact_dropdown %}", function(data) {
+	            $("#people").html(data);
+	        });
+        }
+        autoRefresh = setInterval(pollDownloader, 1000);
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="module">
+        
+        <h2>Excel Export</h2>
+        <form action="" method="post" id="exportform">{% csrf_token %}
+            <fieldset>Dates: {% include "logistics/partials/date_selector.html" %}</fieldset>
+            <fieldset>
+                <label>What data do you want to export?</label><br/>
+                <input type="radio" name="to_export" value="stock"> Periodic Stock Summary<br>
+                <input type="radio" name="to_export" value="reports"> All Product Reports<br/>
+                <input type="radio" name="to_export" value="reporting"> Periodic Reporting Summary<br/>
+                <input type="radio" name="to_export" value="sms_messages"> SMS Messages<br/>
+                {% for name, func in custom_exports %}
+                   <input type="radio" name="to_export" value="{{name}}"> {{name}}<br/>
+                {% endfor %}
+            </fieldset>
+            
+            <div class="hidden" id="programs">
+                <fieldset>
+                <input class="product_list" type="radio" name="commoditytype" value="all" checked>
+                    {% trans "All" %}<br>
+                {% for commoditytype in commoditytypes %}
+                <input class="product_list" type="radio" name="commoditytype" value="{{ commoditytype.code }}">
+                    {{ commoditytype.name }}<br/>
+                {% endfor %}</fieldset></div>
+            
+            {% for program_code, commodities in commodities_by_program %}
+            <div class="hidden" id="program_{{program_code}}">
+                <fieldset><input class="product_list" type="radio" name="commodity" value="all" checked>
+                    {% trans "All" %}<br>
+                {% for commodity in commodities %}
+                <input class="product_list" type="radio" name="commodity" value="{{ commodity.sms_code }}">
+                    {{ commodity.name }}<br>
+                {% endfor %}</fieldset></div>
+            {% endfor %}
+            
+            <!-- This is populated dynamically above since it's a bit slow to load -->
+            <div class="hidden" id="people"></div>
+
+            <div class="submit">
+                <input type="submit" name="submit" value="Export" />
+            </div>
+        </form>
+        
+    </div>
+    <div class="module">
+        <div {% if not display_loading %}class="hidden"{% endif %} id="export_start">
+            <img src="{{ MEDIA_URL }}soil/img/ajax-loader.gif"/>
+            Preparing download. This may take some time...
+        </div>
+        <div id="display_{{ download_id }}"></div>
+    </div>
+{% endblock %}

@@ -2,17 +2,18 @@
 # vim: ai ts=4 sts=4 et sw=4 encoding=utf-8
 from __future__ import absolute_import
 
-from logistics.const import Reports
-
-from dimagi.utils import csv 
+import os
 import json
+import uuid
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from django.core.urlresolvers import reverse
+from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponse, Http404
+from django.http import HttpResponse, HttpResponseRedirect, \
+    HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
@@ -22,27 +23,35 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 from rapidsms.conf import settings
+from rapidsms.contrib.messagelog.models import Message
+from rapidsms.models import Contact
 from rapidsms.contrib.locations.models import Location
 from rapidsms.contrib.messagelog.views import MessageLogView as RapidSMSMessagLogView
+from dimagi.utils import csv 
 from dimagi.utils.dates import DateSpan
 from dimagi.utils.decorators.datespan import datespan_in_request
 from email_reports.decorators import magic_token_required
 from logistics.charts import stocklevel_plot
+from logistics.const import Reports
 from logistics.decorators import place_in_request
 from logistics.models import ProductStock, \
     ProductReportsHelper, ProductReport, LogisticsProfile,\
-    SupplyPoint, StockTransaction, RequisitionReport
+    SupplyPoint, StockTransaction, RequisitionReport, \
+    ProductType
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown, TotalStockByLocation
+from logistics.tasks import create_export_reporting_file, \
+    create_export_periodic_stock
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
 from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
-from alerts.models import Notification
-
+from logistics.view_util import get_func
+from logistics.tasks import export_periodic_stock, export_reporting, \
+    export_periodic_reporting, export_messagelog
 
 def no_ie_allowed(request, template="logistics/no_ie_allowed.html"):
     return render_to_response(template, context_instance=RequestContext(request))
@@ -310,34 +319,6 @@ def get_location_children(location, commodity_filter, commoditytype_filter, date
     children.extend(location.get_children())
     return _get_rows_from_children(children, commodity_filter, commoditytype_filter, datespan)
 
-@cache_page(60 * 15)
-@place_in_request()
-def export_reporting(request):
-    if request.location is None:
-        request.location = get_object_or_404(Location, code=settings.COUNTRY)
-    queryset = ProductReport.objects.filter(supply_point__location__in=\
-                                            request.location.get_descendants(include_self=True))\
-      .select_related("supply_point__name", "supply_point__location__parent__name", 
-                      "supply_point__location__parent__parent__name", 
-                      "product__name", "report_type__name", "message__text").order_by('report_date')
-    response = HttpResponse(mimetype=mimetype_map.get(format, 'application/octet-stream'))
-    response['Content-Disposition'] = 'attachment; filename=reporting.xls'
-    writer = csv.UnicodeWriter(response)
-    writer.writerow(['ID', 'Location Grandparent', 'Location Parent', 'Facility', 
-                     'Commodity', 'Report Type', 
-                     'Quantity', 'Date',  'Message'])
-    for q in queryset:
-        parent = q.supply_point.location.parent.name if q.supply_point.location.parent else None
-        grandparent = q.supply_point.location.parent.parent.name if q.supply_point.location.parent.parent else None
-        message = q.message.text if q.message else None
-        writer.writerow([q.id, 
-                         grandparent, 
-                         parent, 
-                         q.supply_point.name, 
-                         q.product.name, q.report_type.name, 
-                         q.quantity, q.report_date, message])
-    return response    
-
 def export_stockonhand(request, facility_code, format='xls', filename='stockonhand'):
     class ProductReportDataset(ModelDataset):
         class Meta:
@@ -570,3 +551,64 @@ def summary(request, location_code=None, context=None):
         'product_stats': products_by_location,
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
+
+@place_in_request()
+@filter_context
+@datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS)
+def excel_export(request, context={}, template="logistics/excel_export.html"):
+    """ a dedicated excel export page, for slicing and dicing exports as needed
+    This page also allows different deployments to define additional export fields """
+    context['download_id'] = uuid.uuid4().hex
+    custom_exports = getattr(settings, "CUSTOM_EXPORTS", None)
+    if request.method == "POST":
+        program = commodity = contact = None
+        program = request.POST.get('commoditytype', None)
+        commodity = request.POST.get('commodity', None)
+        if request.POST["to_export"] == 'stock':
+            export_periodic_stock(context['download_id'], request, program, commodity)
+        if request.POST["to_export"] == 'reports':
+            export_reporting(context['download_id'], request, program=program, commodity=commodity)
+        if request.POST["to_export"] == 'reporting':
+            export_periodic_reporting(context['download_id'], request)
+        if request.POST["to_export"] == 'sms_messages':
+            contact = request.POST.get('contact', None)
+            export_messagelog(context['download_id'], request, contact)
+        for name, func in custom_exports:
+            if request.POST["to_export"] == name:
+                get_func(func)(context['download_id'])
+        context["display_loading"] = True
+    context["custom_exports"] = custom_exports
+    commodities_by_program = []
+    for program in ProductType.objects.all():
+        commodities_by_program.append((program.code, Product.objects.filter(type=program).order_by('name')))
+    context["commodities_by_program"] = commodities_by_program
+    context['location'] = request.location
+    context['destination_url'] = "excel-export"
+    return render_to_response(
+        template, context, context_instance=RequestContext(request)
+    )
+
+def ajax_contact_dropdown(request, template="logistics/partials/contact_dropdown.html"):
+    context = {}
+    context["contacts"] = Contact.objects.all().order_by("name")
+    return render_to_response(
+        template, context, context_instance=RequestContext(request)
+    )
+
+def _excel_response(path, filename):
+    f = open(path, "rb")
+    response = HttpResponse(FileWrapper(f), content_type='application/octet-stream')
+    response['Content-Disposition'] = 'attachment; filename=%s' % filename
+    return response
+
+@place_in_request()
+@datespan_in_request(default_days=30)
+def export_reporting(request):
+    fd, path = create_export_reporting_file(request)
+    return _excel_response(path, "export_reporting.xls")
+
+@place_in_request()
+@datespan_in_request(default_days=30)
+def export_periodic_stock(request):
+    fd, path = create_export_periodic_stock(request)
+    return _excel_response(path, "export_periodic_stock.xls")
