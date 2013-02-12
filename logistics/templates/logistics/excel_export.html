@@ -26,11 +26,11 @@
         });
         // validate form submission
         $("#exportform").submit(function() {
-            $("[id^=display_]").hide();
             if ($("[name=to_export]:checked").length == 0){
                 alert("Please indicate what you would like to export.");
                 return false;
             }
+            $("[id^=display_]").hide();
             $("#export_start").show("fast");
          });
         // use ajax to poll for the finished download
@@ -45,12 +45,12 @@
                 clearInterval(autoRefresh);
             }
         };
-        $(document).ready(function () {
-            autoRefresh = setInterval(pollDownloader, 2000);
-        });
-        $.get("{% url ajax_contact_dropdown %}", function(data) {
-            $("#people").html(data);
-        });
+        if ($("people").length <= 1){        
+	        $.get("{% url ajax_contact_dropdown %}", function(data) {
+	            $("#people").html(data);
+	        });
+        }
+        autoRefresh = setInterval(pollDownloader, 2000);
     });
 </script>
 {% endblock %}
