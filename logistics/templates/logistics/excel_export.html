@@ -61,8 +61,7 @@
         
         <h2>Excel Export</h2>
         <form action="" method="post" id="exportform">{% csrf_token %}
-            <!-- TODO: add logistics/partials/breadcrumbs.html later -->
-            Dates: {% include "logistics/partials/date_selector.html" %}<br/>
+            <fieldset>Dates: {% include "logistics/partials/date_selector.html" %}</fieldset>
             <fieldset>
                 <label>What data do you want to export?</label><br/>
                 <input type="radio" name="to_export" value="stock"> Periodic Stock Summary<br>

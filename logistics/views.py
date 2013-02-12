@@ -2,11 +2,13 @@
 # vim: ai ts=4 sts=4 et sw=4 encoding=utf-8
 from __future__ import absolute_import
 
+import os
 import json
 import uuid
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from django.core.urlresolvers import reverse
+from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.db import transaction
@@ -39,6 +41,8 @@ from logistics.models import ProductStock, \
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
 from logistics.reports import ReportingBreakdown, TotalStockByLocation
+from logistics.tasks import create_export_reporting_file, \
+    create_export_periodic_stock
 from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
@@ -578,6 +582,8 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
     for program in ProductType.objects.all():
         commodities_by_program.append((program.code, Product.objects.filter(type=program).order_by('name')))
     context["commodities_by_program"] = commodities_by_program
+    context['location'] = request.location
+    context['destination_url'] = "excel-export"
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
@@ -588,3 +594,21 @@ def ajax_contact_dropdown(request, template="logistics/partials/contact_dropdown
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
+
+def _excel_response(path, filename):
+    f = open(path, "rb")
+    response = HttpResponse(FileWrapper(f), content_type='application/octet-stream')
+    response['Content-Disposition'] = 'attachment; filename=%s' % filename
+    return response
+
+@place_in_request()
+@datespan_in_request(default_days=30)
+def export_reporting(request):
+    fd, path = create_export_reporting_file(request)
+    return _excel_response(path, "export_reporting.xls")
+
+@place_in_request()
+@datespan_in_request(default_days=30)
+def export_periodic_stock(request):
+    fd, path = create_export_periodic_stock(request)
+    return _excel_response(path, "export_periodic_stock.xls")

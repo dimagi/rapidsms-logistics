@@ -61,4 +61,10 @@ urlpatterns = patterns('',
     url(r'^ajax/contact_dropdown$',
         'logistics.views.ajax_contact_dropdown',
         name="ajax_contact_dropdown"),
+    url(r'^export_periodic_stock',
+        'logistics.views.export_periodic_stock',
+        name="export_periodic_stock"), 
+    url(r'^export_reporting',
+        'logistics.views.export_reporting',
+        name="export_reporting")
 )
