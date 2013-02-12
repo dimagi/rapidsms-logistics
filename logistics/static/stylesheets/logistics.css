@@ -109,3 +109,10 @@ textarea, select {
 	color: red;  
 	content: "*"; 
 }
+
+.alert-success { 
+	border: 2px solid #ddd;
+    background: #e6efc2; 
+    color: #264409; 
+    border-color: #c6d880; 
+}

@@ -26,6 +26,7 @@
         });
         // validate form submission
         $("#exportform").submit(function() {
+            $("[id^=display_]").hide();
             if ($("[name=to_export]:checked").length == 0){
                 alert("Please indicate what you would like to export.");
                 return false;
@@ -105,7 +106,6 @@
             <img src="{{ MEDIA_URL }}soil/img/ajax-loader.gif"/>
             Preparing download. This may take some time...
         </div>
-        <div id="display_{{ download_id }}">
-        </div>
+        <div id="display_{{ download_id }}"></div>
     </div>
 {% endblock %}
