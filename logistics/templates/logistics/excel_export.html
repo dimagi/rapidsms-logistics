@@ -42,6 +42,7 @@
                     $("#display_{{ download_id }}").html(data);
                 });
             } else {
+                $("#export_start").slideUp("slow");
                 clearInterval(autoRefresh);
             }
         };
@@ -50,7 +51,7 @@
 	            $("#people").html(data);
 	        });
         }
-        autoRefresh = setInterval(pollDownloader, 2000);
+        autoRefresh = setInterval(pollDownloader, 1000);
     });
 </script>
 {% endblock %}
@@ -102,7 +103,7 @@
         
     </div>
     <div class="module">
-        <div class="hidden" id="export_start">
+        <div {% if not display_loading %}class="hidden"{% endif %} id="export_start">
             <img src="{{ MEDIA_URL }}soil/img/ajax-loader.gif"/>
             Preparing download. This may take some time...
         </div>

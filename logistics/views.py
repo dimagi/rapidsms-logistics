@@ -572,6 +572,7 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
         for name, func in custom_exports:
             if request.POST["to_export"] == name:
                 get_func(func)(context['download_id'])
+        context["display_loading"] = True
     context["custom_exports"] = custom_exports
     commodities_by_program = []
     for program in ProductType.objects.all():
