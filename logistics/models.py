@@ -684,7 +684,8 @@ class ProductStock(models.Model):
     
     def roll_back_to(self, datespan):
         # set 'quantity' to a historical date
-        if datespan and not datespan.is_default:
+        if datespan and not datespan.is_default \
+          and datespan.computed_enddate < datetime.now():
             historical_stock = self.supply_point.historical_stock_by_date(self.product, 
                                                                           datespan.end_of_end_day - timedelta(days=1), 
                                                                           default_value=None)
