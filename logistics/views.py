@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import os
 import json
 import uuid
+from tablib import Dataset
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from django.core.urlresolvers import reverse
@@ -17,7 +18,7 @@ from django.http import HttpResponse, HttpResponseRedirect, \
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
-from django_tablib import ModelDataset
+from django_tablib import ModelDataset, NoObjectsException
 from django_tablib.base import mimetype_map
 from django.views.decorators.http import require_POST
 from django.views.decorators.cache import cache_page
@@ -321,10 +322,14 @@ def get_location_children(location, commodity_filter, commoditytype_filter, date
     return _get_rows_from_children(children, commodity_filter, commoditytype_filter, datespan)
 
 def export_stockonhand(request, facility_code, format='xls', filename='stockonhand'):
-    class ProductReportDataset(ModelDataset):
-        class Meta:
-            queryset = ProductReport.objects.filter(supply_point__code=facility_code).order_by('report_date')
-    dataset = getattr(ProductReportDataset(), format)
+    try:
+        class ProductReportDataset(ModelDataset):
+            class Meta:
+                queryset = ProductReport.objects.filter(supply_point__code=facility_code).order_by('report_date')
+    except NoObjectsException:
+        dataset = getattr(Dataset(), format)
+    else:
+        dataset = getattr(ProductReportDataset(), format)
     filename = '%s_%s.%s' % (filename, facility_code, format)
     response = HttpResponse(
         dataset,
