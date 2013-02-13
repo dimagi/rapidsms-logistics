@@ -60,11 +60,12 @@
     <div class="module">
         
         <h2>Excel Export</h2>
+        {% include "logistics/partials/breadcrumbs.html" %}
         <form action="" method="post" id="exportform">{% csrf_token %}
             <fieldset>Dates: {% include "logistics/partials/date_selector.html" %}</fieldset>
             <fieldset>
                 <label>What data do you want to export?</label><br/>
-                <input type="radio" name="to_export" value="stock"> Periodic Stock Summary<br>
+                <!-- <input type="radio" name="to_export" value="stock"> Periodic Stock Summary<br> -->
                 <input type="radio" name="to_export" value="reports"> All Product Reports<br/>
                 <input type="radio" name="to_export" value="reporting"> Periodic Reporting Summary<br/>
                 <input type="radio" name="to_export" value="sms_messages"> SMS Messages<br/>

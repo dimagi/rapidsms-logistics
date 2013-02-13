@@ -13,7 +13,7 @@ from logistics.models import SupplyPoint, Product, ProductReport
 from logistics.reports import ReportingBreakdown
 
 @task
-def export_messagelog(download_id, request, contact=None, expiry=10*60*60):
+def task_export_messagelog(download_id, request, contact=None, expiry=10*60*60):
     try:
         class MessageDataSet(ModelDataset):
             class Meta:
@@ -45,7 +45,7 @@ def _get_day_of_week(date, day_of_week):
     return date + timedelta(days=weekday_delta)            
 
 @task
-def export_periodic_reporting(download_id, request, expiry=10*60*60):
+def task_export_periodic_reporting(download_id, request, expiry=10*60*60):
     filename = 'periodic_reporting.xls'
     locations = [pk for pk in request.location.get_descendants_plus_self()]
     base_points = SupplyPoint.objects.filter(location__in=locations, active=True)
@@ -80,15 +80,15 @@ def export_periodic_reporting(download_id, request, expiry=10*60*60):
                     download_id=download_id)
     
 @task
-def export_periodic_stock(download_id, request, program=None, commodity=None, expiry=10*60*60):
-    fd, path = create_export_reporting_file(request, program, commodity)
+def task_export_periodic_stock(download_id, request, program=None, commodity=None, expiry=10*60*60):
+    filename = 'periodic_stock.xls'
+    fd, path = create_export_periodic_stock(request, program, commodity)
     expose_download(FileWrapper(file(path)), expiry,
                     mimetype="application/octet-stream",
                     content_disposition='attachment; filename=%s' % filename,
                     download_id=download_id)
 
 def create_export_periodic_stock(request, program=None, commodity=None):
-    filename = 'periodic_stock.xls'
     fd, path = tempfile.mkstemp()
     with os.fdopen(fd, "w") as f:
         f.write(", ".join(["start of period", "end of period", "total facilities", 
@@ -145,7 +145,7 @@ def create_export_periodic_stock(request, program=None, commodity=None):
     return fd, path
 
 @task
-def export_reporting(download_id, request, program=None, commodity=None, expiry=10*60*60):
+def task_export_reporting(download_id, request, program=None, commodity=None, expiry=10*60*60):
     fd, path = create_export_reporting_file(request, program, commodity)
     expose_download(FileWrapper(file(path)), expiry,
                     mimetype="application/octet-stream",

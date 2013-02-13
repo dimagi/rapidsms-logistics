@@ -50,8 +50,9 @@ from rapidsms.contrib.messagelog.tables import MessageTable
 from rapidsms.models import Backend
 from .tables import FacilityTable, CommodityTable, MessageTable
 from logistics.view_util import get_func
-from logistics.tasks import export_periodic_stock, export_reporting, \
-    export_periodic_reporting, export_messagelog
+from logistics.tasks import task_export_periodic_stock, \
+    task_export_reporting, task_export_messagelog, \
+    task_export_periodic_reporting
 
 def no_ie_allowed(request, template="logistics/no_ie_allowed.html"):
     return render_to_response(template, context_instance=RequestContext(request))
@@ -554,7 +555,7 @@ def summary(request, location_code=None, context=None):
 
 @place_in_request()
 @filter_context
-@datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS)
+@datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS*4)
 def excel_export(request, context={}, template="logistics/excel_export.html"):
     """ a dedicated excel export page, for slicing and dicing exports as needed
     This page also allows different deployments to define additional export fields """
@@ -565,14 +566,14 @@ def excel_export(request, context={}, template="logistics/excel_export.html"):
         program = request.POST.get('commoditytype', None)
         commodity = request.POST.get('commodity', None)
         if request.POST["to_export"] == 'stock':
-            export_periodic_stock(context['download_id'], request, program, commodity)
+            task_export_periodic_stock(context['download_id'], request, program, commodity)
         if request.POST["to_export"] == 'reports':
-            export_reporting(context['download_id'], request, program=program, commodity=commodity)
+            task_export_reporting(context['download_id'], request, program=program, commodity=commodity)
         if request.POST["to_export"] == 'reporting':
-            export_periodic_reporting(context['download_id'], request)
+            task_export_periodic_reporting(context['download_id'], request)
         if request.POST["to_export"] == 'sms_messages':
             contact = request.POST.get('contact', None)
-            export_messagelog(context['download_id'], request, contact)
+            task_export_messagelog(context['download_id'], request, contact)
         for name, func in custom_exports:
             if request.POST["to_export"] == name:
                 get_func(func)(context['download_id'])
