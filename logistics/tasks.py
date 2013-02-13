@@ -21,14 +21,15 @@ def task_export_messagelog(download_id, request, contact=None, expiry=10*60*60):
                     messages = Message.objects.order_by('-date')
                     if contact:
                         messages = messages.filter(contact__pk=contact)
-                    if request.location: 
-                        messages = messages.filter(contact__supply_point__location__pk__in=\
-                            [l.pk for l in request.location.get_descendants_plus_self()]).distinct()
-                    if request.datespan:
-                        start = request.datespan.computed_startdate
-                        end = request.datespan.computed_enddate
-                        messages = messages.filter(date__gte=start)\
-                                           .filter(date__lte=end)
+                    else:
+                        if request.location: 
+                            messages = messages.filter(contact__supply_point__location__pk__in=\
+                                [l.pk for l in request.location.get_descendants_plus_self()]).distinct()
+                        if request.datespan:
+                            start = request.datespan.computed_startdate
+                            end = request.datespan.computed_enddate
+                            messages = messages.filter(date__gte=start)\
+                                               .filter(date__lte=end)
                     return messages
                 queryset = _get_mds_queryset()
     except NoObjectsException:
