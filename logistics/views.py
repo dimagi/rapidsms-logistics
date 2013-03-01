@@ -233,7 +233,7 @@ def navigate(request):
         querystring += '&to=' + request.REQUEST['to']
     if 'from' in request.REQUEST and request.REQUEST['from']: 
         querystring += '&from=' + request.REQUEST['from']
-    mode = request.REQUEST.get("mode", "url")
+    mode = settings.LOGISTICS_NAVIGATION_MODE
     if mode == "url":
         return HttpResponseRedirect(
             reverse(destination, args=(location_code, )))
