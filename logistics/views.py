@@ -558,7 +558,6 @@ def summary(request, location_code=None, context=None):
     })
     return render_to_response("logistics/summary.html", context, context_instance=RequestContext(request))
 
-<<<<<<< HEAD
 @place_in_request()
 @filter_context
 @datespan_in_request(default_days=settings.LOGISTICS_REPORTING_CYCLE_IN_DAYS*4)
