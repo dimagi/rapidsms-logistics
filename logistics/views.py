@@ -626,13 +626,13 @@ def export_periodic_stock(request):
 @filter_context
 @magic_token_required()
 @datespan_in_request()
-def facilities_by_products(request, location_code=None, context={}, template="logistics/facilities_by_products.html"):
-    if location_code is None:
-        location_code = settings.COUNTRY
-    location = get_object_or_404(Location, code=location_code)
-    facilities = location.all_child_facilities()
-    context['location'] = location
-    context['destination_url'] = 'aggregate'
+@place_in_request()
+def facilities_by_products(request, context={}, template="logistics/facilities_by_products.html"):
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
+    facilities = request.location.all_child_facilities()
+    context['location'] = request.location
+    context['destination_url'] = "facilities_by_products"
     context['product_stats'] = TotalStockByLocation(facilities).products
     context['summary'] = SidewaysProductAvailabilitySummaryByFacilitySP(facilities, 
                                                                 year=request.datespan.enddate.year, 
