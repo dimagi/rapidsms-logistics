@@ -4,28 +4,52 @@
     $(document).ready(function() {
         // Bar chart
         bar_options = {                     
-           series: {
-             stack: 0,
-             lines: { show: false, steps: false },
-             bars: { show: true, barWidth: 0.75, align: 'center' }
-           },
-           xaxis: { 
-                   ticks: {{ summary.flot_data.ticks|safe }}
-                  }, 
-           legend: {show: true, container: $("#{{ summary.legenddiv }}"), noColumns: {{ summary.legend_cols|default:3 }} },
-           yaxis: {max: {{ summary.max_value }},
-                   tickDecimals: 0 },
+          series: {
+            lines: { show: false, steps: false },
+            bars: { show: true, barWidth: 0.75, align: 'center', horizontal: true }
+          },
+          yaxis: {
+                 },
+           legend: {show: true, container: $("#{{ summary.legenddiv }}"), noColumns: 3 },
+           yaxis: {tickDecimals: 0 },
            grid: {show: true,
                   tickColor: 'gray',
                   backgroundColor: '#FFFFFF',
                   hoverable: false,
                   autoHighlight:false}
         };
-        $.plot($("#{{ summary.div }}"), {{ summary.flot_data.data|safe }}, bar_options);    
+        var dmap = {{ summary.flot_data.dmap|safe }};
+        var products = {{ summary.flot_data.products|safe }};
+        var update_pas = function(){
+            var withstock = [];
+            var withoutstock = [];
+            var nodata = [];
+            var ticks = [];
+            var cur_data = {{ summary.flot_data.data|safe }};
+            var index = 1;
+            var checked_count = 0;
+            for (var p in products) {
+                d = products[p];
+                $('.prod-'+d).fadeIn(1000);
+                withstock.push([dmap[d].with_stock, index]);
+                withoutstock.push([dmap[d].without_stock, index + 1]);
+                nodata.push([dmap[d].without_data, index + 2]);
+                ticks.push([index + 1, dmap[d].tick]);
+                index = index + 4;
+                checked_count = checked_count + 1;
+            }
+            cur_data[0].data = withoutstock;
+            cur_data[1].data = withstock;
+            cur_data[2].data = nodata;
+            bar_options.yaxis.ticks = ticks;
+            height = 10 * index + "px";
+            $("#{{ summary.div }}")[0].style.height = height;
+            $.plot($("#{{ summary.div }}"), cur_data, bar_options);
+        };
+        update_pas();
     });
-	</script>
+    </script>
 {% endblock %}
 <div id="{{ summary.legenddiv }}" style="width:100%"></div>
-<p>{{ summary.yaxistitle }}</p>
-<div id="{{ summary.div }}" style="width:{{ summary.width }}px; height:{{ summary.height }}px" ></div>
-<p style="text-align:center; width:100%;">{{ summary.xaxistitle }}</p>
+<div id="{{ summary.div }}" style="width: 100%; height:{{ summary.height }}px" ></div>
+<p style="text-align:center; width:100%;">Facilities</p>

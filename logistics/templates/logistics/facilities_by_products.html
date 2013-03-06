@@ -1,0 +1,59 @@
+{% extends "logistics/reports_base.html" %}
+{% load i18n %}
+{% load logistics_report_tags %}
+{% block stylesheets %}{{ block.super }}
+    <link type="text/css" rel="stylesheet" href="{{ MEDIA_URL }}logistics/stylesheets/reports.css" />
+{% endblock %}
+
+{% block javascripts %}{{ block.super }}
+    <script language="javascript" type="text/javascript" src="{{ MEDIA_URL }}logistics/javascripts/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ MEDIA_URL }}logistics/javascripts/jquery.flot.stack.js"></script>
+{% endblock %}
+
+
+{% block content %}
+    <div class="module">
+        {% include "logistics/partials/breadcrumbs.html" %}
+        <div id="main">
+            <h2 id="report-title"> {{ location.name }} {% trans "Aggregate Facilities Stock Report" %}</h2>
+            <div id="report-content">
+			    <div class="two-columns">
+			        <div class="col-1">
+			            <div class="module">
+			                <h2>Product Availability</h2>
+			                {% include "logistics/partials/product_availability_summary.html" %}
+			            </div>
+			        </div>
+			
+			        <div class="col-2">
+		                <table style="width:100%">
+		                    <thead>
+		                        <tr style="text-align: left;">
+		                            <th>Product</th>
+		                            <th>Total Stock</th>
+		                            <th>Monthly Consumption</th>
+		                            <th>Months of Stock</th>
+		                            <th>Stock Status</th>
+		                        </tr>
+		                    </thead>
+		                    <tbody>
+		                        {% for product_stat in product_stats %}
+		                            <tr><td style="padding: 0.5em;">{{ product_stat.name }}</td>
+		                            <td style="padding: 0.5em; ">{{ product_stat.total_stock }}</td>
+		                            <td style="padding: 0.5em; ">{{ product_stat.consumption }}</td>
+		                            <td style="padding: 0.5em; "><strong>{{ product_stat.months_of_stock }}</strong></td>
+		                            <td style="{%ifequal product_stat.stock_status "Stockout" %}background-color: #ff9899; {% endifequal %}
+		                                       {%ifequal product_stat.stock_status "Low" %}background-color: #fff6cf;; {% endifequal %}
+		                                       {%ifequal product_stat.stock_status "Overstocked" %}background-color: #bf7ebe;; {% endifequal %}
+		                                       {%ifequal product_stat.stock_status "Adequate" %}background-color: #9acc99;; {% endifequal %}
+		                                       padding: 0.5em; "><strong>{{ product_stat.stock_status }}</strong></td>
+		                        {% endfor %}
+		                    </tbody>
+		                </table>
+			        </div>
+			    </div>
+                {% block extra_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

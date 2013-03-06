@@ -67,9 +67,12 @@ class TotalStockByLocation(object):
     """
     Given a query set of supply points, get an object for displaying stock 
     totals, consumption totals, and total stock status.
-    
+
     NOTE: we use only the current consumption value, even if looking at historical data
     since we don't store enough information to re-create historical consumption
+    
+    Historical rollback is DISABLED until the client requests this feature
+    since it makes the report twice as slow to load
     """
     def __init__(self, supply_points, datespan=None):
         self.products = Product.objects.filter(is_active=True).order_by('type', 'name')
@@ -81,7 +84,8 @@ class TotalStockByLocation(object):
             product.total_stock = 0
             product.total_stock_w_consumption = 0
             for stock in stocks:
-                stock.roll_back_to(datespan)
+                # DISABLE historical transaction, to improve page speed
+                # stock.roll_back_to(datespan)
                 product.total_stock = product.total_stock + (stock.quantity or 0)
                 if stock.monthly_consumption:
                     product.total_stock_w_consumption = product.total_stock_w_consumption + (stock.quantity or 0)
@@ -572,7 +576,7 @@ class SidewaysProductAvailabilitySummary(ProductAvailabilitySummary):
                                                         "with_stock": product_summary['with_stock'],
                                                         "without_stock": product_summary['without_stock'],
                                                         "without_data": product_summary['without_data'],
-                                                        "tick": "<span title='%s'>%s</span>" % (product_summary["product"].name, product_summary["product"].sms_code)
+                                                        "tick": "<span title='%s'>%s</span>" % (product_summary["product"].name, product_summary["product"].name)
                                                         }
             products.append(product_summary['product'].sms_code)
         bar_data = [{"data" : [],
@@ -643,7 +647,7 @@ class ProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummary):
 
         total = facilities.count()
 
-        products = Product.objects.all().order_by('sms_code')
+        products = Product.objects.filter(is_active=True).order_by('-type', '-name')
         data = []
         
         for p in products:
@@ -677,6 +681,11 @@ class ProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummary):
                          "without_stock": without_stock,
                          "without_data": without_data})
         self.data = data
+
+class SidewaysProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummaryByFacilitySP, SidewaysProductAvailabilitySummary):
+
+    def __init__(self, facilities, width=900, height=360, month=None, year=None):
+        super(SidewaysProductAvailabilitySummaryByFacilitySP, self).__init__(facilities, width, height, month, year)
 
 class DynamicProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummaryByFacilitySP, SidewaysProductAvailabilitySummary):
 
