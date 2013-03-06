@@ -5,6 +5,12 @@
     <link type="text/css" rel="stylesheet" href="{{ MEDIA_URL }}logistics/stylesheets/reports.css" />
 {% endblock %}
 
+{% block javascripts %}{{ block.super }}
+    <script language="javascript" type="text/javascript" src="{{ MEDIA_URL }}logistics/javascripts/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ MEDIA_URL }}logistics/javascripts/jquery.flot.stack.js"></script>
+{% endblock %}
+
+
 {% block content %}
     <div class="module">
         {% include "logistics/partials/breadcrumbs.html" %}
@@ -15,7 +21,7 @@
 			        <div class="col-1">
 			            <div class="module">
 			                <h2>Product Availability</h2>
-			                {% include "logistics/partials/dynamic_product_availability_summary.html" %}
+			                {% include "logistics/partials/product_availability_summary.html" %}
 			            </div>
 			        </div>
 			

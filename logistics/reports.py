@@ -576,7 +576,7 @@ class SidewaysProductAvailabilitySummary(ProductAvailabilitySummary):
                                                         "with_stock": product_summary['with_stock'],
                                                         "without_stock": product_summary['without_stock'],
                                                         "without_data": product_summary['without_data'],
-                                                        "tick": "<span title='%s'>%s</span>" % (product_summary["product"].name, product_summary["product"].sms_code)
+                                                        "tick": "<span title='%s'>%s</span>" % (product_summary["product"].name, product_summary["product"].name)
                                                         }
             products.append(product_summary['product'].sms_code)
         bar_data = [{"data" : [],
@@ -647,7 +647,7 @@ class ProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummary):
 
         total = facilities.count()
 
-        products = Product.objects.all().order_by('sms_code')
+        products = Product.objects.filter(is_active=True).order_by('-type', '-name')
         data = []
         
         for p in products:
@@ -681,6 +681,11 @@ class ProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummary):
                          "without_stock": without_stock,
                          "without_data": without_data})
         self.data = data
+
+class SidewaysProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummaryByFacilitySP, SidewaysProductAvailabilitySummary):
+
+    def __init__(self, facilities, width=900, height=360, month=None, year=None):
+        super(SidewaysProductAvailabilitySummaryByFacilitySP, self).__init__(facilities, width, height, month, year)
 
 class DynamicProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummaryByFacilitySP, SidewaysProductAvailabilitySummary):
 

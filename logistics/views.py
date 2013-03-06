@@ -41,7 +41,8 @@ from logistics.models import ProductStock, \
     ProductType
 from logistics.util import config
 from logistics.view_decorators import filter_context, geography_context
-from logistics.reports import ReportingBreakdown, TotalStockByLocation
+from logistics.reports import ReportingBreakdown, TotalStockByLocation, \
+    SidewaysProductAvailabilitySummaryByFacilitySP
 from logistics.tasks import create_export_reporting_file, \
     create_export_periodic_stock
 from .models import Product, ProductType
@@ -633,6 +634,9 @@ def facilities_by_products(request, location_code=None, context={}, template="lo
     context['location'] = location
     context['destination_url'] = 'aggregate'
     context['product_stats'] = TotalStockByLocation(facilities).products
+    context['summary'] = SidewaysProductAvailabilitySummaryByFacilitySP(facilities, 
+                                                                year=request.datespan.enddate.year, 
+                                                                month=request.datespan.enddate.month)
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
