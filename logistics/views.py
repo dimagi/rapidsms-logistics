@@ -621,7 +621,7 @@ def export_periodic_stock(request):
     return _excel_response(path, "export_periodic_stock.xls")
 
 @csrf_exempt
-@cache_page(60 * 15)
+#@cache_page(60 * 15)
 @geography_context
 @filter_context
 @magic_token_required()
@@ -632,7 +632,8 @@ def facilities_by_products(request, context={}, template="logistics/facilities_b
         request.location = get_object_or_404(Location, code=settings.COUNTRY)
     facilities = request.location.all_child_facilities()
     context['location'] = request.location
-    context['destination_url'] = "facilities_by_products"
+    if not 'destination_url' in context:
+        context['destination_url'] = "facilities_by_products"
     context['product_stats'] = TotalStockByLocation(facilities).products
     context['summary'] = SidewaysProductAvailabilitySummaryByFacilitySP(facilities, 
                                                                 year=request.datespan.enddate.year, 
@@ -640,3 +641,17 @@ def facilities_by_products(request, context={}, template="logistics/facilities_b
     return render_to_response(
         template, context, context_instance=RequestContext(request)
     )
+
+@csrf_exempt
+@geography_context
+@place_in_request()
+def fbp_redirect(request, context={}, template="logistics/aggregate.html"):
+    if request.location is None:
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
+    # if the location has no children, and 1 supply point treat it like
+    # a stock on hand request. Otherwise treat it like an aggregate.
+    if request.location.get_children().count() == 0 and request.location.facilities().count() == 1:
+        facility = request.location.facilities()[0]
+        return stockonhand_facility(request, facility.code, context=context)
+    return facilities_by_products(request, context=context, template=template)
+
