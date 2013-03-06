@@ -621,7 +621,7 @@ def export_periodic_stock(request):
     return _excel_response(path, "export_periodic_stock.xls")
 
 @csrf_exempt
-#@cache_page(60 * 15)
+@cache_page(60 * 15)
 @geography_context
 @filter_context
 @magic_token_required()
