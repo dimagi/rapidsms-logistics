@@ -20,6 +20,22 @@ def logistics_contact_required():
         return require_logistics_contact
     return wrapper
 
+def logistics_supply_point_required():
+    """
+    This decorator currently only works on an instance
+    of a handler object. 
+    """
+    def wrapper(f):
+        def require_logistics_supply_point(self, *args, **kwargs):
+            if not hasattr(self.msg,'logistics_contact'):
+                self.respond(config.Messages.REGISTRATION_REQUIRED_MESSAGE)
+            elif not self.msg.logistics_contact.supply_point:
+                self.respond(config.Messages.NO_SUPPLY_POINT_MESSAGE)
+            else:
+                return f(self, *args, **kwargs)
+        return require_logistics_supply_point
+    return wrapper
+
 def logistics_permission_required(operation):
     """
     This decorator currently only works on an instance
