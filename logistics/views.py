@@ -446,7 +446,7 @@ def district_dashboard(request, template="logistics/district_dashboard.html"):
     location = request.location
     if request.location is None:
         location = request.location = get_object_or_404(Location, code=settings.COUNTRY)
-        facilities = SupplyPoint.objects.all()
+        facilities = SupplyPoint.objects.filter(active=True)
     else:
         if request.location.get_children().count() <= 1:
             # since this is a dashboard, it doesn't really make sense
