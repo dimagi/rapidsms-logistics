@@ -28,7 +28,6 @@ from rapidsms.contrib.messagelog.models import Message
 from rapidsms.models import Contact
 from rapidsms.contrib.locations.models import Location
 from rapidsms.contrib.messagelog.views import MessageLogView as RapidSMSMessagLogView
-from dimagi.utils import csv 
 from dimagi.utils.dates import DateSpan
 from dimagi.utils.decorators.datespan import datespan_in_request
 from email_reports.decorators import magic_token_required

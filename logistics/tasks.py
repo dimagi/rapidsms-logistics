@@ -7,6 +7,7 @@ from django.core.servers.basehttp import FileWrapper
 from django_tablib import ModelDataset, NoObjectsException
 from rapidsms.contrib.messagelog.models import Message
 from dimagi.utils.dates import DateSpan
+from dimagi.utils import csv 
 from soil import CachedDownload
 from soil.util import expose_download
 from logistics.models import SupplyPoint, Product, ProductReport
@@ -47,14 +48,14 @@ def _get_day_of_week(date, day_of_week):
 
 @task
 def task_export_periodic_reporting(download_id, request, expiry=10*60*60):
-    filename = 'periodic_reporting.xls'
+    filename = 'periodic_reporting.csv'
     locations = [pk for pk in request.location.get_descendants_plus_self()]
     base_points = SupplyPoint.objects.filter(location__in=locations, active=True)
     fd, path = tempfile.mkstemp()
     with os.fdopen(fd, "w") as f:
-        f.write(", ".join(["start of period", "end of period", "total num facilities", 
-                           "# reporting", "# on time", "# late", "# non-reporting"]))
-        f.write('\n')
+        writer = csv.UnicodeWriter(f)
+        writer.writerow(["start of period", "end of period", "total num facilities", 
+                      "# reporting", "# on time", "# late", "# non-reporting"])
         end_date = _get_day_of_week(datetime.now(), 3)
         start_date = end_date - timedelta(days=7)
         start_of_report = request.datespan.computed_startdate
@@ -72,7 +73,7 @@ def task_export_periodic_reporting(download_id, request, expiry=10*60*60):
             st_list = map(unicode, [start_date, end_date, total, 
                                 report.reported.count(), on_time, 
                                 late, non_reporting])
-            f.write("%s\n".decode('utf8') % ", ".join(st_list))
+            writer.writerow(st_list)
             end_date = start_date
             start_date = end_date - timedelta(days=7)
     expose_download(FileWrapper(file(path)), expiry,
@@ -82,7 +83,7 @@ def task_export_periodic_reporting(download_id, request, expiry=10*60*60):
     
 @task
 def task_export_periodic_stock(download_id, request, program=None, commodity=None, expiry=10*60*60):
-    filename = 'periodic_stock.xls'
+    filename = 'periodic_stock.csv'
     fd, path = create_export_periodic_stock(request, program, commodity)
     expose_download(FileWrapper(file(path)), expiry,
                     mimetype="application/octet-stream",
@@ -92,10 +93,9 @@ def task_export_periodic_stock(download_id, request, program=None, commodity=Non
 def create_export_periodic_stock(request, program=None, commodity=None):
     fd, path = tempfile.mkstemp()
     with os.fdopen(fd, "w") as f:
-        f.write(", ".join(["start of period", "end of period", "total facilities", 
-                           "stock out", "low stock", "adequate stock", "overstock"]))
-        f.write('\n')
-
+        writer = csv.UnicodeWriter(f)
+        writer.writerow(["start of period", "end of period", "total facilities", 
+                         "stock out", "low stock", "adequate stock", "overstock"])
         end_date = _get_day_of_week(datetime.now(), 3)
         start_date = end_date - timedelta(days=7)
         start_of_report = request.datespan.computed_startdate
@@ -140,7 +140,7 @@ def create_export_periodic_stock(request, program=None, commodity=None):
                 total = stockout+low+adequate+overstock+safe_add(total, 
                         request.location.other_count(datespan=datespan))
             st_list = map(unicode, [start_date, end_date, total, stockout, low, adequate, overstock])
-            f.write("%s\n".decode('utf8') % ", ".join(st_list))
+            writer.writerow(st_list)
             end_date = start_date 
             start_date = end_date - timedelta(days=7)
     return fd, path
@@ -150,7 +150,7 @@ def task_export_reporting(download_id, request, program=None, commodity=None, ex
     fd, path = create_export_reporting_file(request, program, commodity)
     expose_download(FileWrapper(file(path)), expiry,
                     mimetype="application/octet-stream",
-                    content_disposition='attachment; filename=export_reporting.xls',
+                    content_disposition='attachment; filename=export_reporting.csv',
                     download_id=download_id)
 
 def create_export_reporting_file(request, program=None, commodity=None):
@@ -172,10 +172,12 @@ def create_export_reporting_file(request, program=None, commodity=None):
     queryset = queryset.order_by('report_date')
     fd, path = tempfile.mkstemp()
     with os.fdopen(fd, "w") as f:
-        f.write(", ".join(['ID', 'Location Grandparent', 'Location Parent', 'Facility', 
+        writer = csv.UnicodeWriter(f)
+        # annoyingly, the 'id' needs to be lower case so that Excel 2007
+        # doesn't interpret this as SLYK file format
+        writer.writerow(['id', 'Location Grandparent', 'Location Parent', 'Facility', 
                          'Commodity', 'Report Type', 
-                         'Quantity', 'Date',  'Message']))
-        f.write("\n")
+                         'Quantity', 'Date',  'Message'])
         for q in queryset:
             parent = q.supply_point.location.parent.name \
                 if q.supply_point.location.parent else None
@@ -185,5 +187,5 @@ def create_export_reporting_file(request, program=None, commodity=None):
             st_list = map(unicode, [q.id, grandparent, parent, q.supply_point.name, 
                                     q.product.name, q.report_type.name, q.quantity, 
                                     q.report_date, message])
-            f.write("%s\n".decode('utf8') % ", ".join(st_list))
+            writer.writerow(st_list)
     return fd, path
