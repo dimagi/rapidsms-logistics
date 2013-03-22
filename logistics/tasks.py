@@ -182,7 +182,7 @@ def create_export_reporting_file(request, program=None, commodity=None):
             parent = q.supply_point.location.parent.name \
                 if q.supply_point.location.parent else None
             grandparent = q.supply_point.location.parent.parent.name \
-                if q.supply_point.location.parent.parent else None
+                if q.supply_point.location.parent and q.supply_point.location.parent.parent else None
             message = q.message.text if q.message else None
             st_list = map(unicode, [q.id, grandparent, parent, q.supply_point.name, 
                                     q.product.name, q.report_type.name, q.quantity, 
