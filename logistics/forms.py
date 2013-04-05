@@ -33,6 +33,19 @@ class FacilityForm(forms.ModelForm):
                 kwargs['initial']['longitude'] = initial_sp.location.point.longitude
         super(FacilityForm, self).__init__(*args, **kwargs)
                 
+    def clean_latitude(self):
+        latitude = float(self.cleaned_data['latitude'])
+        if latitude and latitude <= 90.0 and latitude >= -90.0:
+            return self.cleaned_data['latitude']
+        raise forms.ValidationError("Invalid value for latitude. Must be between -90 and +90.")
+    
+    def clean_longitude(self):
+        longitude = float(self.cleaned_data['longitude'])
+        if longitude and longitude <= 180.0 and longitude >= -180.0:
+            return self.cleaned_data['longitude']
+        print longitude
+        raise forms.ValidationError("Invalid value for longitude. Must be between -180 and +180.")
+
     def save(self, *args, **kwargs):
         facility = super(FacilityForm, self).save(*args, **kwargs)
         if self.cleaned_data['commodities']:
