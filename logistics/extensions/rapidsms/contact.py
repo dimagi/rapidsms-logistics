@@ -41,8 +41,13 @@ class Contact(models.Model):
     
     @property
     def last_message(self):
-        if self.message_set.count() > 0:
-            return self.message_set.order_by("-date")[0]
+        incoming_msgs = self.message_set.filter(direction="I")
+        if incoming_msgs.count() > 0:
+            return incoming_msgs.order_by("-date")[0]
+    
+    @property
+    def last_reported(self):
+        return self.last_message.date if self.last_message else None
         
     def has_responsibility(self, code):
         if not self.role:
