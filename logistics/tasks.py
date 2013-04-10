@@ -94,7 +94,7 @@ def create_export_periodic_stock(request, program=None, commodity=None):
     fd, path = tempfile.mkstemp()
     with os.fdopen(fd, "w") as f:
         writer = csv.UnicodeWriter(f)
-        writer.writerow(["start of period", "end of period", "total facilities", 
+        writer.writerow(["start of period", "end of period", "total commodities * total facilities", 
                          "stock out", "low stock", "adequate stock", "overstock"])
         end_date = _get_day_of_week(datetime.now(), 3)
         start_date = end_date - timedelta(days=7)
@@ -104,31 +104,14 @@ def create_export_periodic_stock(request, program=None, commodity=None):
             if end_date >= end_of_report + timedelta(days=7):
                 continue
             datespan = DateSpan(start_date, end_date)
-            
-            stockout = low = adequate = overstock = total = 0
+            stockout = low = adequate = overstock = othercount = total = 0
             safe_add = lambda x, y: x + y if y is not None else x
             filtered_commodities = None
-            if commodity:
+            if commodity and commodity != 'all':
                 filtered_commodities = Product.objects.filter(is_active=True).filter(sms_code=commodity)
-            elif program:
+            elif program and program != 'all':
                 filtered_commodities = Product.objects.filter(is_active=True).filter(type__code=program)
-            if filtered_commodities:
-                for commodity in filtered_commodities:
-                    stockout = safe_add(stockout, 
-                                        request.location.stockout_count(product=commodity, 
-                                                                        datespan=datespan))
-                    low = safe_add(low, 
-                                        request.location.emergency_plus_low(product=commodity, 
-                                                                            datespan=datespan))
-                    adequate = safe_add(adequate, 
-                                        request.location.good_supply_count(product=commodity, 
-                                                                           datespan=datespan))
-                    overstock = safe_add(overstock, 
-                                        request.location.overstocked_count(product=commodity, 
-                                                                           datespan=datespan))
-                    total = stockout+low+adequate+overstock+safe_add(total, 
-                            request.location.other_count(product=commodity, datespan=datespan))
-            else:
+            if filtered_commodities is None:
                 stockout = safe_add(stockout, 
                                     request.location.stockout_count(datespan=datespan))
                 low = safe_add(low, 
@@ -139,6 +122,23 @@ def create_export_periodic_stock(request, program=None, commodity=None):
                                     request.location.overstocked_count(datespan=datespan))
                 total = stockout+low+adequate+overstock+safe_add(total, 
                         request.location.other_count(datespan=datespan))
+            else:
+                for fc in filtered_commodities:
+                    stockout = safe_add(stockout, 
+                                        request.location.stockout_count(product=fc.sms_code, 
+                                                                        datespan=datespan))
+                    low = safe_add(low, request.location.emergency_plus_low(product=fc.sms_code, 
+                                                                            datespan=datespan))
+                    adequate = safe_add(adequate, 
+                                        request.location.good_supply_count(product=fc.sms_code, 
+                                                                           datespan=datespan))
+                    overstock = safe_add(overstock, 
+                                        request.location.overstocked_count(product=fc.sms_code, 
+                                                                           datespan=datespan))
+                    othercount = safe_add(othercount, 
+                                        request.location.other_count(product=fc.sms_code, 
+                                                                           datespan=datespan))
+                total = stockout+low+adequate+overstock+othercount
             st_list = map(unicode, [start_date, end_date, total, stockout, low, adequate, overstock])
             writer.writerow(st_list)
             end_date = start_date 
