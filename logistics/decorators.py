@@ -126,13 +126,14 @@ def _put_place_in_request(request, param):
     request.from_url = True if code else False
     if settings.LOGISTICS_USE_LOCATION_SESSIONS:
         cookie_name = "RAPIDSMS-LOGISTICS-LOCATION"
-        if code:
-            # if we're using cookies the url overrides them
-            # so only use it to set it back in the cookie
-            request.session[cookie_name] = code
-        else:
-            # check the cookie as well
-            code = request.session.get(cookie_name, None)
+        if hasattr(request, 'session'):
+            if code:
+                # if we're using cookies the url overrides them
+                # so only use it to set it back in the cookie
+                request.session[cookie_name] = code
+            else:
+                # check the cookie as well
+                code = request.session.get(cookie_name, None)
             
     if code:
         request.location = Location.objects.get(code=code)

@@ -526,31 +526,25 @@ class MonthPager(object):
         self.show_next = True if self.end_date < datetime.utcnow().replace(day=1) else False
         self.datespan = DateSpan(self.begin_date, self.end_date)
 
-
-@geography_context
-def summary(request, location_code=None, context=None):
+@cache_page(60 * 15)
+@place_in_request()
+def summary(request, context=None):
     """
     View for generating HTML email reports via email-reports.
     While this can be viewed on the web, primarily this is rendered using a fake
     request object so care should be taken accessing items on the request.
     However request.user will be set.
     """
+    if not hasattr(request, 'location'):
+        request.location = get_object_or_404(Location, code=settings.COUNTRY)
     context = context or {}
-    profile = request.user.get_profile()
-    if profile.location_id:
-        location = profile.location
-    else:
-        location = context['geography']
-    # Set request location like place_in_request
-    # This is needed by some of the alerts
-    request.location = location
-    facilities = location.all_child_facilities()
+    facilities = request.location.all_facilities()
     datespan = DateSpan.since(settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
     report = ReportingBreakdown(facilities, datespan, 
         days_for_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT)
     products_by_location = TotalStockByLocation(facilities, datespan).products
     context.update({
-        'location': location,
+        'location': request.location,
         'facilities': facilities,
         'facility_count': facilities.count(),
         'report': report,
