@@ -20,10 +20,13 @@ class Stop(KeywordHandler):
         if self.msg.contact is None:
             self.respond(config.Messages.REGISTER_MESSAGE)
             return
+        if self.msg.contact.role is None:
+            self.respond("You have not been registered to a role. Please contact your DHIO or RHIO to fix your registration.")
+            return
         if config.Responsibilities.REPORTEE_RESPONSIBILITY in self.msg.contact.role.responsibilities.values_list('code', flat=True):
             # if a super, show last report from your facility
             if self.msg.contact.supply_point is None:
-                self.respond("Your are not registered to a facility. Please contact your DHIO or RHIO for assistance.")
+                self.respond("You are not registered to a facility. Please contact your DHIO or RHIO for assistance.")
                 return
             reports = ProductReport.objects.filter(supply_point=self.msg.contact.supply_point)
             if not reports:
