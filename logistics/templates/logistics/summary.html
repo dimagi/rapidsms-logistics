@@ -37,6 +37,7 @@
                             <th style="padding: 0.5em; border: 0; background: #fff;">% Facilities<br/> with Stockouts</th>
                             <th style="padding: 0.5em; border: 0; background: #fff;">Total # Facilities<br/>Registered with this Product</th>
                             <th style="padding: 0.5em; border: 0; background: #fff;">Total Stock</th>
+                            <th style="padding: 0.5em; border: 0; background: #fff;">% Facilities with Consumption Data</th>
                             <th style="padding: 0.5em; border: 0; background: #fff;">Monthly Consumption</th>
                             <th style="padding: 0.5em; border: 0; background: #fff;">Months of Stock</th>
                             <th style="padding: 0.5em; border: 0; background: #fff;">Stock Status</th>
@@ -49,6 +50,8 @@
                                 <span style="color:grey ; font-size:0.75em">({{product_stat.stockout_count}})</span></td>
                             <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.facility_count }}</td>
                             <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.total_stock }}</td>
+                            <td style="padding: 0.5em; border: 1px solid #000;"">{% percent product_stat.facilities_with_consumption product_stat.facility_count %} 
+                                <span style="color:grey ; font-size:0.75em">({{ product_stat.facilities_with_consumption }})</span></td>
                             <td style="padding: 0.5em; border: 1px solid #000;"">{{ product_stat.consumption }}</td>
                             <td style="padding: 0.5em; border: 1px solid #000;""><strong>{{ product_stat.months_of_stock }}</strong></td>
                             <td style="{%ifequal product_stat.stock_status "Stockout" %}background-color: #ff9899; {% endifequal %}

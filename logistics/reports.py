@@ -81,6 +81,7 @@ class TotalStockByLocation(object):
                       .filter(supply_point__in=supply_points)\
                       .select_related("supply_point", "supply_point__type", "product")
             product.facility_count = stocks.count()
+            product.facilities_with_consumption = product.facility_count
             product.total_stock = 0
             product.total_stock_w_consumption = 0
             for stock in stocks:
@@ -89,6 +90,8 @@ class TotalStockByLocation(object):
                 product.total_stock = product.total_stock + (stock.quantity or 0)
                 if stock.monthly_consumption:
                     product.total_stock_w_consumption = product.total_stock_w_consumption + (stock.quantity or 0)
+                else:
+                    product.facilities_with_consumption = product.facilities_with_consumption - 1
             product.consumption = get_aggregate_consumption_from_stocks(stocks)
             product.stockout_count = stocks.filter(quantity=0).count()
             if not product.consumption:
