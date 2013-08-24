@@ -16,6 +16,7 @@ class FacilityForm(forms.ModelForm):
     
     class Meta:
         model = SupplyPoint
+        # TODO: exclude 'code' and then autocreate it dynamically with slugify
         exclude = ("last_reported", )
     
     def __init__(self, *args, **kwargs):
