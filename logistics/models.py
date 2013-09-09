@@ -316,19 +316,7 @@ class SupplyPointBase(models.Model, StockCacheMixin):
         return True
 
     def commodities_stocked(self):
-        """ what are all the commodities which we are actively stocking at this facility? """
-        if settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_USER: 
-            # do a join on all commodities associated with all users
-            return Product.objects.filter(is_active=True, reported_by__supply_point=self)
-        elif settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_FACILITY: 
-            # look for products with active ProductStocks linked to his facility
-            return Product.objects.filter(productstock__supply_point=self, 
-                                          productstock__is_active=True, 
-                                          is_active=True)
-        elif settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_PRODUCT: 
-            # all active Products in the system
-            return Product.objects.filter(is_active=True)
-        raise ImproperlyConfigured("LOGISTICS_STOCKED_BY setting is not configured correctly")
+        return commodities_stocked_by_supplypoint(self)
     
     def supplies(self, product):
         return product in self.commodities_stocked()
@@ -1691,6 +1679,43 @@ def transactions_before_or_during(year, month, day=None):
         return StockTransaction.objects.filter(date__lt=first_of_the_next_month).order_by("-date")
     deadline = date(year, month, day) + timedelta(days=1)
     return StockTransaction.objects.filter(date__lte=deadline).order_by("-date")
+
+
+""" START: Below is where we define how fundamental system behaviour changes 
+    depending on stock policy (settings. LOGISTICS_STOCKED_BY)
+"""
+def filter_facilities_by_product(facilities, p):
+    """ what are all the commodities which we are actively stocking at this facility? """
+    if settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_USER: 
+        # do a join on all commodities associated with all users
+        return facilities.filter(contact__commodities=p).distinct()
+    elif settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_FACILITY: 
+        # look for products with active ProductStocks linked to his facility
+        return facilities.filter(productstock__product=p, 
+                                 productstock__is_active=True).distinct()
+    elif settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_PRODUCT: 
+        # all active Products in the system
+        return facilities if p.is_active else None
+    raise ImproperlyConfigured("LOGISTICS_STOCKED_BY setting is not configured correctly")
+
+def commodities_stocked_by_supplypoint(supplypoint):
+    """ what are all the commodities which we are actively stocking at this facility? """
+    if settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_USER: 
+        # do a join on all commodities associated with all users
+        return Product.objects.filter(is_active=True, reported_by__supply_point=supplypoint)
+    elif settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_FACILITY: 
+        # look for products with active ProductStocks linked to his facility
+        return Product.objects.filter(productstock__supply_point=supplypoint, 
+                                      productstock__is_active=True, 
+                                      is_active=True)
+    elif settings.LOGISTICS_STOCKED_BY == settings.STOCKED_BY_PRODUCT: 
+        # all active Products in the system
+        return Product.objects.filter(is_active=True)
+    raise ImproperlyConfigured("LOGISTICS_STOCKED_BY setting is not configured correctly")
+""" END: Above is where we define how fundamental system behaviour changes 
+    depending on stock policy (settings. LOGISTICS_STOCKED_BY)
+"""
+
 
 from .warehouse_models import *
 

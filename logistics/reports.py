@@ -9,8 +9,9 @@ from django.db.models import Q
 from django.utils.importlib import import_module
 from rapidsms.conf import settings
 from dimagi.utils.dates import DateSpan
-from logistics.models import ProductReport, \
-    Product, ProductStock, SupplyPoint, StockRequest, HistoricalStockCache
+from logistics.models import ProductReport, Product, \
+    ProductStock, SupplyPoint, StockRequest, HistoricalStockCache, \
+    filter_facilities_by_product
 from .tables import SOHReportingTable
 from .const import Reports
 from .util import config
@@ -613,10 +614,10 @@ class ProductAvailabilitySummaryByFacility(ProductAvailabilitySummary):
         self._width = width
         self._height = height
         
-        products = Product.objects.all().order_by('sms_code')
+        products = Product.objects.filter(is_active=True).order_by('sms_code')
         data = []
         for p in products:
-            supplying_facilities = facilities.filter(contact__commodities=p).distinct()
+            supplying_facilities = filter_facilities_by_product(facilities, p)
             if supplying_facilities:
                 total = supplying_facilities.count()
                 stocks = ProductStock.objects.filter(product=p, supply_point__in=supplying_facilities)
@@ -652,7 +653,6 @@ class ProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummary):
 
         products = Product.objects.filter(is_active=True).order_by('-type', '-name')
         data = []
-        
         for p in products:
 
             # once we want to use the cache we can use these to populate
