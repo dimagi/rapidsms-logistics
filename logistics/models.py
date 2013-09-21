@@ -217,6 +217,13 @@ class SupplyPointBase(models.Model, StockCacheMixin):
             if self.location.facilities().exists() or self.location.get_children().exists():
                 return
             self.location.deactivate()
+            
+    def set_location(self, location):
+        if location is None:
+            return
+        self.location = location
+        if self.active == True and location.is_active == False:
+            location.activate()
         
     def report_status(self, days_until_late=settings.LOGISTICS_DAYS_UNTIL_LATE_PRODUCT_REPORT):
         """ returns a tuple: 
