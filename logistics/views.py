@@ -48,7 +48,7 @@ from .models import Product, ProductType
 from .forms import FacilityForm, CommodityForm
 from rapidsms.contrib.messagelog.models import Message
 from rapidsms.contrib.messagelog.tables import MessageTable
-from rapidsms.models import Backend
+from rapidsms.models import Backend, Contact
 from .tables import FacilityTable, CommodityTable, MessageTable
 from logistics.view_util import get_func
 from logistics.tasks import task_export_periodic_stock, \
@@ -648,3 +648,18 @@ def fbp_redirect(request, context={}, template="logistics/aggregate.html"):
         return stockonhand_facility(request, facility.code, context=context)
     return facilities_by_products(request, context=context, template=template)
 
+def global_stats(request):
+    active_sps = SupplyPoint.objects.filter(active=True)
+    hsa_type = getattr(config.SupplyPointCodes, 'HSA', 'nomatch')
+    facility_type = getattr(config.SupplyPointCodes,'FACILITY', 'nomatch')
+    context = {
+        'facilities': active_sps.filter(type__code=facility_type).count(),
+        'hsas': active_sps.filter(type__code=hsa_type).count(),
+        'contacts': Contact.objects.filter(is_active=True).count(),
+        'product_stocks': ProductStock.objects.filter(is_active=True).count(),
+        'stock_transactions': StockTransaction.objects.count(),
+        'inbound_messages': Message.objects.filter(direction='I').count(),
+        'outbound_messages': Message.objects.filter(direction='O').count(),
+    }
+    return render_to_response('logistics/global_stats.html', context,
+                              context_instance=RequestContext(request))
