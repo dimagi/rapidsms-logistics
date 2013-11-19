@@ -57,5 +57,8 @@ urlpatterns = patterns('',
         name="export_periodic_stock"), 
     url(r'^export_reporting',
         'logistics.views.export_reporting',
-        name="export_reporting")
+        name="export_reporting"),
+    url(r'^global_stats',
+        'logistics.views.global_stats',
+        name="global_stats")
 )
