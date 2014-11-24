@@ -8,7 +8,7 @@ from logistics.models import ProductReportsHelper, \
     StockRequest, StockTransfer
 from logistics.decorators import logistics_contact_and_permission_required
 from logistics.const import Reports
-from logistics.util import config
+from logistics.util import config, ussd_msg_response
 from logistics.handlers import logistics_keyword
 
 class ReceiptHandler(KeywordHandler,TaggingHandler):
@@ -51,3 +51,8 @@ class ReceiptHandler(KeywordHandler,TaggingHandler):
                          supplier=supplier)
         else:
             self.respond(_(config.Messages.RECEIPT_CONFIRM), products=" ".join(stock_report.reported_products()).strip())
+
+    def respond(self, template=None, **kwargs):
+        self.add_default_tags()
+        self.add_tags(kwargs.get("tags", []))
+        return ussd_msg_response(self.msg, template, **kwargs)
