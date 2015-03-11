@@ -1,15 +1,6 @@
 from django.db import models
 from datetime import datetime
 
-class HistoricalStockCache(models.Model):
-    """
-    A simple class to cache historical stock levels by month/year per product/facility
-    """        
-    supply_point = models.ForeignKey('logistics.SupplyPoint')
-    product = models.ForeignKey('logistics.Product', null=True)
-    year = models.PositiveIntegerField()
-    month = models.PositiveIntegerField()
-    stock = models.IntegerField(null=True)
 
 class BaseReportingModel(models.Model):
     """

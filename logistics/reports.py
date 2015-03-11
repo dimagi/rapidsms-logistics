@@ -9,8 +9,7 @@ from django.db.models import Q
 from django.utils.importlib import import_module
 from rapidsms.conf import settings
 from dimagi.utils.dates import DateSpan
-from logistics.models import ProductReport, \
-    Product, ProductStock, SupplyPoint, StockRequest, HistoricalStockCache
+from logistics.models import ProductReport, Product, ProductStock, SupplyPoint, StockRequest
 from .tables import SOHReportingTable
 from .const import Reports
 from .util import config
@@ -589,30 +588,18 @@ class ProductAvailabilitySummaryByFacilitySP(ProductAvailabilitySummary):
         data = []
         
         for p in products:
-
-            # once we want to use the cache we can use these to populate
-            # this object, but for now disable it
-            if False:
-                relevant = HistoricalStockCache.objects.filter(product=p,
-                                                               year=year, 
-                                                               month=month)
-                with_stock = relevant.filter(stock__gt=0).count()
-                without_stock = relevant.filter(stock=0).count()
-                without_data = total - with_stock - without_stock
-            else:
-                # TODO This is ludicrously inefficient.
-            
-                with_stock = 0
-                without_stock = 0
-                without_data = 0
-                for f in facilities:
-                    stock = f.historical_stock(p, year, month, default_value=-1)
-                    if stock > 0:
-                        with_stock += 1
-                    elif stock == 0:
-                        without_stock += 1
-                    else:
-                        without_data += 1
+            # TODO This is ludicrously inefficient.
+            with_stock = 0
+            without_stock = 0
+            without_data = 0
+            for f in facilities:
+                stock = f.historical_stock(p, year, month, default_value=-1)
+                if stock > 0:
+                    with_stock += 1
+                elif stock == 0:
+                    without_stock += 1
+                else:
+                    without_data += 1
             data.append({"product": p,
                          "total": total,
                          "with_stock": with_stock,
