@@ -1,6 +1,11 @@
 rapidsms-logistics
 ==================
 
+**This repository is fully deprecated. It has been merged with [the cStock codebase](https://github.com/dimagi/logistics).**
+
+Old README
+----------
+
 The logistics app is meant to provide all the bells and whistles needed to provide SMS support to logistics management systems.
 
 Web Reports
